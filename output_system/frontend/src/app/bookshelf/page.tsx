@@ -30,7 +30,6 @@ import { FanBookCard } from '../../components/book/FanBookCard';
 import {
   saveOAuthToken,
   apiGetBookshelf,
-  apiGetBookReadUrl,
   BookshelfItem,
   ApiError,
 } from '../../lib/api';
@@ -107,18 +106,16 @@ export default function BookshelfPage() {
   /**
    * 書籍閲覧ハンドラー
    *
-   * バックエンドから署名付きURLを取得し、新しいタブで書籍を開く。
-   * 現在はURLを表示するのみ（PBI C3: 電子書籍ビューアーは後続タスク）。
+   * 電子書籍ビューアーページに遷移する。
+   * ビューアーページ側で署名付きURLを取得してPDF/EPUBビューアーで表示する。
    *
    * @param bookId - 閲覧する書籍ID
    */
   async function handleReadBook(bookId: string): Promise<void> {
     setReadingBookId(bookId);
     try {
-      const result = await apiGetBookReadUrl(bookId);
-      // 新しいタブで署名付きURLを開く（DRM保護のため直接URLを渡す）
-      // TODO: 後続PBIでPDF/EPUBビューアーを実装したらそこに遷移する
-      window.open(result.url, '_blank', 'noopener,noreferrer');
+      // ビューアーページに遷移（reader/[bookId]）
+      router.push(`/reader/${bookId}`);
     } catch (err) {
       const apiErr = err as ApiError;
       alert(apiErr.message || '書籍の読み込みに失敗しました');
