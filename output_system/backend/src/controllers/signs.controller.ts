@@ -225,6 +225,46 @@ export async function updateSign(req: Request, res: Response, next: NextFunction
 }
 
 /**
+ * GET /api/signs/:id/image
+ * サイン画像の署名付きS3 URLを取得し、リダイレクトまたはJSONで返す
+ * 著者は自分のサインの画像のみ取得可能
+ *
+ * パスパラメータ:
+ * - id: サインID（UUID）
+ *
+ * レスポンス (302): S3署名付きURLへリダイレクト
+ * または (200): { url: string } で署名付きURLを返す
+ *
+ * @param req - Expressリクエストオブジェクト（req.params.id にサインID）
+ * @param res - Expressレスポンスオブジェクト
+ * @param next - 次のミドルウェア関数
+ */
+export async function getSignImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    // サインを取得して認可チェック（著者は自分のサインのみ）
+    const sign = await signsService.getSign(id, userId);
+
+    if (!sign.imageKey) {
+      // 画像がない場合は404
+      res.status(404).json({ error: 'NOT_FOUND', message: 'サイン画像が存在しません', statusCode: 404 });
+      return;
+    }
+
+    // S3署名付きURLを生成してリダイレクト（有効期限: 15分）
+    const { storageService } = await import('../services/storage.service');
+    const signedUrl = await storageService.getSignedUrl(sign.imageKey, 900);
+
+    // ブラウザ向けにリダイレクトする
+    res.redirect(302, signedUrl);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * DELETE /api/signs/:id
  * サインを削除する（S3画像も削除）
  * 著者は自分のサインのみ削除可能
