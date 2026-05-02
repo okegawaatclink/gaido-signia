@@ -214,7 +214,9 @@ describe('BooksService', () => {
         expect.objectContaining({
           body: mockPdfFile.buffer,
           contentType: 'application/pdf',
-          serverSideEncryption: 'AES256',
+          // serverSideEncryptionはS3_ENABLE_SSE=trueの場合のみ'AES256'、デフォルトはundefined
+          // テスト環境ではS3_ENABLE_SSE未設定のためundefinedになる
+          serverSideEncryption: undefined,
         })
       );
       expect(mockBookCreate).toHaveBeenCalledWith(

@@ -30,17 +30,28 @@ const nextConfig = {
     const backendUrl = process.env.BACKEND_URL
       || 'http://okegawaatclink-gaido-signia-output-system-backend:3002';
 
-    return [
-      {
-        // /api/auth/* はNextAuth.jsが処理するためプロキシしない（除外設定）
-        // このルールより前にNextAuth.jsのルートがマッチするため、プロキシから除外される
-        // /api/* のリクエストをバックエンドの /api/* にプロキシ
-        // ただし /api/auth/* はNextAuth.jsのルートハンドラーが先にキャッチするため
-        // 実際にはバックエンドにはプロキシされない
-        source: '/api/:path((?!auth/).*)',
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
+    return {
+      // beforeFiles: Next.jsのルートハンドラーより前に評価されるrewrite
+      // /api/auth/[...nextauth] (NextAuth.js) より先にバックエンドAPIエンドポイントをプロキシする
+      beforeFiles: [
+        // バックエンドの認証APIエンドポイントを明示的にプロキシする
+        // /api/auth/login, /api/auth/logout, /api/auth/me, /api/auth/oauth はバックエンドに転送
+        // Note: beforeFilesを使うことでNextAuth.jsのルートハンドラーより先にマッチさせる
+        { source: '/api/auth/login', destination: `${backendUrl}/api/auth/login` },
+        { source: '/api/auth/logout', destination: `${backendUrl}/api/auth/logout` },
+        { source: '/api/auth/me', destination: `${backendUrl}/api/auth/me` },
+        { source: '/api/auth/oauth', destination: `${backendUrl}/api/auth/oauth` },
+      ],
+      // afterFiles: /api/auth/* 以外の全APIをバックエンドにプロキシ
+      afterFiles: [
+        {
+          // /api/auth/[...nextauth] はNextAuth.jsが処理するためプロキシ除外
+          // それ以外の /api/* はバックエンドにプロキシ
+          source: '/api/:path((?!auth/).*)',
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 
