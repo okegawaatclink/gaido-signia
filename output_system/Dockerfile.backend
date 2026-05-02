@@ -1,0 +1,93 @@
+# ===================================================================
+# Signia バックエンド Dockerfile
+# ベースイメージ: ubuntu:24.04（AI Agent containerと同一のため）
+# ===================================================================
+
+FROM ubuntu:24.04
+
+# ===== 基本パッケージのインストール =====
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===== 企業プロキシ用SSL証明書の設定（オプション） =====
+# ビルドコンテキストは親ディレクトリ（..）のため ssl-certificates/ にアクセス可能
+COPY ssl-certificates/ /etc/ssl/certs/custom/
+
+RUN if [ -f /etc/ssl/certs/custom/netskope.cer ]; then \
+      cp /etc/ssl/certs/custom/netskope.cer /usr/local/share/ca-certificates/netskope.crt && \
+      update-ca-certificates && \
+      echo "Custom CA certificate registered to system CA store"; \
+    else \
+      echo "No custom CA certificate found, skipping"; \
+    fi
+
+# ===== Node.js 20 LTS のインストール =====
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN node --version && npm --version
+
+# ===== 作業ディレクトリの設定 =====
+WORKDIR /app/backend
+
+# ===== 依存パッケージのインストール =====
+COPY output_system/backend/package*.json ./
+COPY output_system/backend/.npmrc ./
+
+RUN if [ -f /etc/ssl/certs/custom/netskope.cer ]; then \
+      export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/custom/netskope.cer; \
+    fi && \
+    npm ci
+
+# ===== ソースコードのコピー =====
+COPY output_system/backend/ ./
+
+# ===== TypeScriptのビルド =====
+RUN npm run build
+
+# ===== ポート公開 =====
+EXPOSE 3002
+
+# ===== 起動スクリプトの作成 =====
+# バックエンド起動時にDBマイグレーションを自動実行してからサーバーを起動する
+# これにより、テーブルが存在しない状態でサーバーが起動するのを防ぐ
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "Starting Signia Backend..."
+echo "Waiting for database to be ready..."
+
+# データベースの準備ができるまで待機（最大60秒）
+for i in $(seq 1 30); do
+  if node -e "
+    const { Pool } = require('pg');
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    pool.query('SELECT 1').then(() => { pool.end(); process.exit(0); }).catch(() => { pool.end(); process.exit(1); });
+  " 2>/dev/null; then
+    echo "Database is ready!"
+    break
+  fi
+  echo "Waiting for database... ($i/30)"
+  sleep 2
+done
+
+echo "Running database migrations..."
+# node-pg-migrateを使用してマイグレーションを実行
+# TypeScriptのビルド済みJSファイルを使用（dist/db/migrations/）
+# ts-nodeよりも安定しており、本番環境に適している
+npx node-pg-migrate up --migrations-dir ./dist/db/migrations --ignore-pattern '.*\.(d\.ts|d\.ts\.map|js\.map)$'
+
+echo "Starting Express server..."
+node dist/index.js
+EOF
+
+RUN chmod +x /app/start.sh
+
+# ===== 起動コマンド =====
+# マイグレーション実行後にサーバーを起動
+CMD ["/app/start.sh"]
