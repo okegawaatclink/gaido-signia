@@ -83,12 +83,12 @@ test.describe('Signed URL Expiry and Security', () => {
 
     // ファン1のJWTトークン取得（ソーシャルログイン経由で作成されたアカウント）
     const fan1LoginResponse = await sharedApiContext.post(
-      'http://okegawaatclink-gaido-signia-output-system-backend:3002/api/auth/fan-social',
+      'http://okegawaatclink-gaido-signia-output-system-backend:3002/api/auth/oauth',
       {
         headers: { 'Content-Type': 'application/json' },
         data: {
           provider: 'google',
-          providerAccountId: `google-signed-url-test-${timestamp}`,
+          providerId: `google-signed-url-test-${timestamp}`,
           email: fanEmail1,
           name: 'E2Eサイン付きURLテストファン',
         },
@@ -100,12 +100,12 @@ test.describe('Signed URL Expiry and Security', () => {
     // ファンアカウント2（書籍アクセス権なし）
     const fanEmail2 = `e2e-fan2-signed-url-${timestamp}@example.com`;
     const fan2LoginResponse = await sharedApiContext.post(
-      'http://okegawaatclink-gaido-signia-output-system-backend:3002/api/auth/fan-social',
+      'http://okegawaatclink-gaido-signia-output-system-backend:3002/api/auth/oauth',
       {
         headers: { 'Content-Type': 'application/json' },
         data: {
           provider: 'google',
-          providerAccountId: `google-signed-url-test2-${timestamp}`,
+          providerId: `google-signed-url-test2-${timestamp}`,
           email: fanEmail2,
           name: 'E2Eサイン付きURLテストファン2（アクセス権なし）',
         },
@@ -129,7 +129,7 @@ test.describe('Signed URL Expiry and Security', () => {
     }
 
     const response = await sharedApiContext.get(
-      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/books/${testBookId}/content`,
+      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/fan/books/${testBookId}/read`,
       { headers: { Authorization: `Bearer ${fanToken}` } }
     );
 
@@ -155,7 +155,7 @@ test.describe('Signed URL Expiry and Security', () => {
     }
 
     const response = await sharedApiContext.get(
-      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/books/${testBookId}/content`,
+      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/fan/books/${testBookId}/read`,
       { headers: { Authorization: `Bearer ${fanToken}` } }
     );
 
@@ -203,7 +203,7 @@ test.describe('Signed URL Expiry and Security', () => {
     }
 
     const response = await sharedApiContext.get(
-      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/books/${testBookId}/content`,
+      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/fan/books/${testBookId}/read`,
       { headers: { Authorization: `Bearer ${fan2Token}` } }
     );
 
@@ -221,7 +221,7 @@ test.describe('Signed URL Expiry and Security', () => {
     }
 
     const response = await sharedApiContext.get(
-      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/books/${testBookId}/content`
+      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/fan/books/${testBookId}/read`
     );
 
     // 未認証は401
@@ -238,7 +238,7 @@ test.describe('Signed URL Expiry and Security', () => {
     }
 
     const response = await sharedApiContext.get(
-      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/books/${testBookId}/content`,
+      `http://okegawaatclink-gaido-signia-output-system-backend:3002/api/fan/books/${testBookId}/read`,
       { headers: { Authorization: `Bearer ${authorToken}` } }
     );
 
