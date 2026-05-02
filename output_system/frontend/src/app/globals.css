@@ -46,3 +46,20 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* ===== DRM保護: 印刷制限 ===== */
+/* ビューアーページでの印刷を制限するためのグローバルスタイル */
+/* .drm-viewer クラスが付いた要素は印刷時に非表示になる */
+@media print {
+  .drm-viewer {
+    display: none !important;
+  }
+
+  body.drm-active::after {
+    content: 'この書籍の印刷は許可されていません。';
+    display: block;
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 4rem;
+  }
+}

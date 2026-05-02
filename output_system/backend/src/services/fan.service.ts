@@ -13,7 +13,7 @@
 
 import { db } from '../config/database';
 import { storageService } from './storage.service';
-import { ForbiddenError } from '../utils/errors';
+import { ForbiddenError, NotFoundError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
 /**
@@ -186,6 +186,17 @@ export class FanService {
    */
   async getBookReadUrl(fanId: string, bookId: string): Promise<BookReadUrlResult> {
     logger.info('Getting book read URL', { fanId, bookId });
+
+    // 書籍が存在するか確認（404用）
+    const bookExistsResult = await db.query(
+      `SELECT id FROM books WHERE id = $1 LIMIT 1`,
+      [bookId]
+    );
+
+    if (bookExistsResult.rows.length === 0) {
+      logger.warn('Fan attempted to access non-existent book', { fanId, bookId });
+      throw new NotFoundError('書籍が見つかりません');
+    }
 
     // ファンがその書籍のアクセス権を持っているか確認
     const accessResult = await db.query(

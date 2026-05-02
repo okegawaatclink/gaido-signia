@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "epubjs": "^0.3.93",
     "fabric": "^6.6.6",
     "next": "15.1.8",
     "next-auth": "^5.0.0-beta.31",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
