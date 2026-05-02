@@ -11,6 +11,7 @@ import authRouter from './auth.routes';
 import booksRouter from './books.routes';
 import signsRouter from './signs.routes';
 import composeRouter from './compose.routes';
+import fanRouter from './fan.routes';
 
 /**
  * メインAPIルーター
@@ -46,8 +47,10 @@ router.use('/signs', signsRouter);
 // サイン合成APIルーターをマウント
 router.use('/compose', composeRouter);
 
+// ファン向けAPIルーターをマウント
+router.use('/fan', fanRouter);
+
 // TODO: 以下の各ルーターは後続のTaskで実装する
-// router.use('/fan', fanRouter);
 // router.use('/admin', adminRouter);
 // router.use('/external', externalRouter);
 
