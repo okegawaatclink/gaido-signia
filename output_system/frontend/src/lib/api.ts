@@ -720,3 +720,151 @@ export async function apiDeactivateAuthor(authorId: string): Promise<{ author: A
     method: 'DELETE',
   });
 }
+
+// ===== 統計情報・ダッシュボード API =====
+
+/**
+ * ダッシュボード統計情報型定義
+ */
+export interface DashboardStats {
+  /** 著者アカウント数（is_active=trueのみ） */
+  authorCount: number;
+  /** 書籍登録数（全ステータス合計） */
+  bookCount: number;
+  /** ファンアカウント数（is_active=trueのみ） */
+  fanCount: number;
+  /** サイン合成済み書籍数 */
+  signedBookCount: number;
+}
+
+/**
+ * 監査ログエントリ型定義（ダッシュボード表示用）
+ */
+export interface AuditLogEntry {
+  /** ログID */
+  id: string;
+  /** 操作ユーザーID */
+  userId: string | null;
+  /** 操作ユーザー名 */
+  userName: string | null;
+  /** 操作ユーザーのロール */
+  userRole: string | null;
+  /** 操作種別 */
+  action: string;
+  /** 対象リソース種別 */
+  resourceType: string;
+  /** 対象リソースID */
+  resourceId: string | null;
+  /** 詳細情報 */
+  details: Record<string, unknown>;
+  /** クライアントIPアドレス */
+  ipAddress: string | null;
+  /** 記録日時 */
+  createdAt: string;
+}
+
+/**
+ * 管理者向け書籍情報型定義（著者情報含む）
+ */
+export interface AdminBookInfo {
+  /** 書籍ID */
+  id: string;
+  /** 書籍タイトル */
+  title: string;
+  /** 書籍説明 */
+  description: string | null;
+  /** ファイル形式: pdf または epub */
+  format: string;
+  /** ステータス */
+  status: 'draft' | 'published' | 'archived';
+  /** ファイルサイズ（bytes） */
+  fileSize: number | null;
+  /** ページ数 */
+  pageCount: number | null;
+  /** メタデータ */
+  metadata: Record<string, unknown>;
+  /** 著者ID */
+  authorId: string;
+  /** 著者名 */
+  authorName: string;
+  /** 著者メールアドレス */
+  authorEmail: string;
+  /** 作成日時 */
+  createdAt: string;
+  /** 更新日時 */
+  updatedAt: string;
+}
+
+/**
+ * 管理者向け書籍詳細型定義（ファンアクセス数含む）
+ */
+export interface AdminBookDetail extends AdminBookInfo {
+  /** ファンアクセス数 */
+  fanAccessCount: number;
+}
+
+/**
+ * 管理者向け書籍一覧レスポンス型定義
+ */
+export interface AdminBooksResult {
+  /** 書籍情報の配列 */
+  books: AdminBookInfo[];
+  /** 総件数 */
+  total: number;
+  /** 現在のページ番号 */
+  page: number;
+  /** 1ページあたりの件数 */
+  limit: number;
+}
+
+/**
+ * ダッシュボード統計情報を取得する（admin ロール専用）
+ *
+ * 著者数・書籍数・ファン数・サイン合成数と最近の操作履歴を返す。
+ *
+ * @returns 統計情報と最近の操作履歴
+ * @throws {ApiError} 認証・認可エラー時
+ */
+export async function apiGetStats(): Promise<{
+  stats: DashboardStats;
+  recentLogs: AuditLogEntry[];
+}> {
+  return apiRequest('/admin/stats');
+}
+
+/**
+ * 全書籍一覧を取得する（admin ロール専用）
+ *
+ * タイトルのILIKE部分一致検索とステータスフィルタ、ページネーションに対応。
+ *
+ * @param params - 検索・フィルタ・ページネーションパラメータ
+ * @returns 書籍一覧と総件数
+ * @throws {ApiError} 認証・認可エラー時
+ */
+export async function apiGetAdminBooks(params?: {
+  search?: string;
+  status?: 'draft' | 'published' | 'archived';
+  page?: number;
+  limit?: number;
+}): Promise<AdminBooksResult> {
+  // クエリパラメータを組み立てる
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append('search', params.search);
+  if (params?.status) searchParams.append('status', params.status);
+  if (params?.page) searchParams.append('page', String(params.page));
+  if (params?.limit) searchParams.append('limit', String(params.limit));
+
+  const query = searchParams.toString();
+  return apiRequest(`/admin/books${query ? `?${query}` : ''}`);
+}
+
+/**
+ * 書籍詳細を取得する（admin ロール専用）
+ *
+ * @param bookId - 書籍ID（UUID）
+ * @returns 書籍詳細情報（著者情報・ファンアクセス数含む）
+ * @throws {ApiError} 書籍が見つからない場合など
+ */
+export async function apiGetAdminBook(bookId: string): Promise<{ book: AdminBookDetail }> {
+  return apiRequest(`/admin/books/${bookId}`);
+}

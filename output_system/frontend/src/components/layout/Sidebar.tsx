@@ -38,6 +38,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/admin/authors',
     icon: '👤',
   },
+  {
+    label: '書籍管理',
+    href: '/admin/books',
+    icon: '📖',
+  },
 ];
 
 /**
