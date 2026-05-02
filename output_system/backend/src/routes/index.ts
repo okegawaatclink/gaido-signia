@@ -13,6 +13,7 @@ import signsRouter from './signs.routes';
 import composeRouter from './compose.routes';
 import fanRouter from './fan.routes';
 import adminRouter from './admin.routes';
+import externalRouter from './external.routes';
 
 /**
  * メインAPIルーター
@@ -54,7 +55,7 @@ router.use('/fan', fanRouter);
 // 管理者向けAPIルーターをマウント（admin ロールのみアクセス可能）
 router.use('/admin', adminRouter);
 
-// TODO: 以下の各ルーターは後続のTaskで実装する
-// router.use('/external', externalRouter);
+// 外部連携APIルーターをマウント（API Key認証、外部購入システム向け）
+router.use('/external', externalRouter);
 
 export default router;

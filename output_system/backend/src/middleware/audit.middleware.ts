@@ -20,18 +20,26 @@ import { logger } from '../utils/logger';
  * audit_logsテーブルのaction列に格納される値
  */
 export type AuditAction =
-  | 'login_success'  // ログイン成功
-  | 'login_failed'   // ログイン失敗（認証エラー）
-  | 'logout'         // ログアウト
-  | 'book_create'    // 書籍作成
-  | 'book_update'    // 書籍更新
-  | 'book_delete'    // 書籍削除
-  | 'sign_create'    // サイン作成
-  | 'sign_delete'    // サイン削除
-  | 'author_create'  // 著者アカウント作成
-  | 'author_update'  // 著者アカウント更新
-  | 'author_delete'  // 著者アカウント削除（無効化）
-  | 'compose_start'; // サイン合成開始
+  | 'login_success'           // ログイン成功
+  | 'login_failed'            // ログイン失敗（認証エラー）
+  | 'logout'                  // ログアウト
+  | 'book_create'             // 書籍作成
+  | 'book_update'             // 書籍更新
+  | 'book_delete'             // 書籍削除
+  | 'sign_create'             // サイン作成
+  | 'sign_delete'             // サイン削除
+  | 'author_create'           // 著者アカウント作成
+  | 'author_update'           // 著者アカウント更新
+  | 'author_delete'           // 著者アカウント削除（無効化）
+  | 'compose_start'           // サイン合成開始
+  // 外部連携API操作
+  | 'external_book_access_grant'   // 外部APIによる書籍アクセス権付与
+  | 'external_book_access_delete'  // 外部APIによる書籍アクセス権削除
+  | 'external_sign_create'         // 外部APIによるサインデータ登録
+  // APIキー管理操作
+  | 'api_key_create'          // APIキー発行
+  | 'api_key_deactivate'      // APIキー無効化
+  | 'api_key_delete';         // APIキー削除
 
 /**
  * 監査ログエントリーの型定義

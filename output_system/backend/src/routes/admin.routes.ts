@@ -28,6 +28,12 @@ import {
   updateAuthor,
   deactivateAuthor,
 } from '../controllers/admin.controller';
+import {
+  listApiKeys,
+  createApiKey,
+  getApiKey,
+  deactivateApiKey,
+} from '../controllers/api-key.controller';
 
 const router = Router();
 
@@ -141,6 +147,86 @@ router.delete(
   adminOnly,
   [param('id').isUUID().withMessage('著者 ID が不正です')],
   deactivateAuthor
+);
+
+// ======= API Key管理ルート =======
+
+/**
+ * GET /api/admin/api-keys
+ * APIキー一覧取得
+ * admin ロールのみアクセス可能
+ */
+router.get('/api-keys', authenticate, adminOnly, listApiKeys);
+
+/**
+ * POST /api/admin/api-keys
+ * 新しいAPIキーを発行する
+ *
+ * リクエストボディのバリデーション:
+ * - name: キー名（必須、1〜100文字）
+ * - description: 説明（オプション）
+ * - permissions: 許可する操作リスト（オプション）
+ * - expiresAt: 有効期限（オプション、ISO 8601形式）
+ *
+ * セキュリティ注意: plainKey はこのレスポンスで一度だけ返される
+ */
+router.post(
+  '/api-keys',
+  authenticate,
+  adminOnly,
+  [
+    // キー名は必須かつ 1〜100 文字
+    body('name')
+      .notEmpty()
+      .withMessage('キー名は必須です')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('キー名は 1〜100 文字で入力してください')
+      .trim(),
+    // 説明はオプション
+    body('description').optional().isString().withMessage('説明は文字列で指定してください').trim(),
+    // permissions はオプションの文字列配列
+    body('permissions')
+      .optional()
+      .isArray()
+      .withMessage('permissions は配列で指定してください'),
+    body('permissions.*').optional().isString().withMessage('permissions の各要素は文字列で指定してください'),
+    // expiresAt はオプションの日時文字列（ISO 8601形式）
+    body('expiresAt')
+      .optional()
+      .isISO8601()
+      .withMessage('expiresAt は ISO 8601 形式（例: 2025-12-31T23:59:59Z）で指定してください'),
+  ],
+  createApiKey
+);
+
+/**
+ * GET /api/admin/api-keys/:id
+ * APIキー詳細取得
+ *
+ * パラメータバリデーション:
+ * - id: UUID 形式
+ */
+router.get(
+  '/api-keys/:id',
+  authenticate,
+  adminOnly,
+  [param('id').isUUID().withMessage('APIキー ID が不正です')],
+  getApiKey
+);
+
+/**
+ * DELETE /api/admin/api-keys/:id
+ * APIキーを無効化する（論理削除）
+ *
+ * パラメータバリデーション:
+ * - id: UUID 形式
+ */
+router.delete(
+  '/api-keys/:id',
+  authenticate,
+  adminOnly,
+  [param('id').isUUID().withMessage('APIキー ID が不正です')],
+  deactivateApiKey
 );
 
 export default router;
