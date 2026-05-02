@@ -139,6 +139,12 @@ docker compose up -d
 - **Jest ClassのinstanceofがESModuleモックで失敗**: `jest.mock()`でクラスをモックするとprototypeチェーンが切れて`rejects.toThrow(SomeError)`がコンストラクタ比較で失敗する。`rejects.toThrow('エラーメッセージ文字列')`による文字列マッチに変更する
 - **validationResult のTypeScript型キャスト**: express-validatorの`validationResult`はジェネリック型`ResultFactory<E>`を返すため`as jest.Mock`への直接キャストがコンパイルエラーになる。`as unknown as jest.Mock`の二段階キャストで回避
 
+- **著者管理: ConflictError (409) 追加**: メールアドレス重複時に409を返すため `utils/errors.ts` に `ConflictError` を追加。`AppError` の既存パターンに従うこと
+- **著者無効化は論理削除**: `DELETE /api/admin/authors/:id` は is_active=false に変更するのみ（物理削除なし）。無効化された著者は `auth.service.ts` の is_active チェックでログイン拒否される
+- **pdfjs-dist v5 RenderParameters**: v5ではRenderParametersに `canvas` フィールドが必須。`canvasContext` だけでは型エラーになる。`{ canvas, canvasContext: ctx, viewport }` で渡す
+- **pdfjs-dist v5 WorkerSrc**: v5ではGlobalWorkerOptions.workerSrcはCDN URLを設定する（node_modules内のworkerはwebpackで直接参照できないため）
+- **epub.js 動的インポート**: epub.jsはSSR非対応のため `import('epubjs').default` で動的インポートする。Book/Rendition型はoverloadのせいで `as unknown as EpubBook` でキャストが必要
+- **ビューアーページのNext.js routing**: ファン向けビューアーは `(fan)/reader/[bookId]` の Route Groupに配置。URLは `/reader/[bookId]` になる
 - **ランディングページSSG**: ランディングページ（`app/page.tsx`）はServer Componentとして実装しSSGで生成。Client Componentをimportする場合でも、イベントハンドラーを持つコンポーネントは `'use client'` を付けること
 - **FooterのhoverはClient Component必須**: `onMouseEnter/onMouseLeave` イベントハンドラーはClient Componentでしか使えない。Server Componentのランディングページに使うFooterは `'use client'` が必要
 - **FanBookCardのNext.js Image unoptimized**: MinIOの署名付きURLはドメインが動的に変わるため `unoptimized` プロパティを使用。`next.config.js` の `remotePatterns` に加えて `unoptimized` を設定することで外部URLを直接表示できる
@@ -169,3 +175,5 @@ docker compose up -d
 - PBI #12: 著者が作成済みサインを一覧・編集・削除できる (SignCardコンポーネント・サイン一覧/詳細・編集画面・JWT認証付き画像fetch・再作成モード・削除確認ダイアログ)
 - PBI #13: 著者がサインを電子書籍に合成できる (pdf-lib PDF合成・JSZip EPUB合成・ComposeService・合成API・サイン合成画面・SignComposerプレビュー)
 - PBI #14: ファンが本棚でサイン入り書籍一覧を確認できる (FanService・本棚API・ランディングページ・本棚画面・Header/Footer/FanBookCardコンポーネント)
+- PBI #15: ファンがDRM保護付きで電子書籍を閲覧できる (pdfjs-dist v5 PDFビューアー・epub.js EPUBビューアー・署名付きURL15分・右クリック禁止・印刷制限・ビューアー画面)
+- PBI #16: 管理者が著者アカウントを作成・管理できる (adminService・著者CRUD API・著者管理画面・Sidebar・ConflictError追加)
