@@ -190,13 +190,24 @@ export async function apiLogin(
 }
 
 /**
- * ログアウトAPIを呼び出す
+ * ログアウトAPIを呼び出す（メール+パスワード認証ユーザー向け）
+ * OAuth認証ユーザーはNextAuth.jsのsignOut()を使用すること
  */
 export async function apiLogout(): Promise<void> {
   await apiRequest('/auth/logout', {
     method: 'POST',
   });
   removeToken();
+}
+
+/**
+ * NextAuth.jsセッションのバックエンドトークンをローカルストレージに保存する
+ * ソーシャルログイン後、バックエンドAPIへのリクエストに使用するトークンを保存する
+ *
+ * @param backendToken - NextAuth.jsセッションから取得したバックエンドJWTトークン
+ */
+export function saveOAuthToken(backendToken: string): void {
+  saveToken(backendToken);
 }
 
 /**

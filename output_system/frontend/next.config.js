@@ -22,6 +22,9 @@ const nextConfig = {
    * - ポート: 3002
    *
    * これにより、フロントエンドはCORSの問題なくバックエンドAPIにアクセスできる
+   *
+   * 注意: /api/auth/* はNextAuth.jsのAPIルートとして処理するため
+   * バックエンドへのプロキシから除外する
    */
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL
@@ -29,8 +32,12 @@ const nextConfig = {
 
     return [
       {
+        // /api/auth/* はNextAuth.jsが処理するためプロキシしない（除外設定）
+        // このルールより前にNextAuth.jsのルートがマッチするため、プロキシから除外される
         // /api/* のリクエストをバックエンドの /api/* にプロキシ
-        source: '/api/:path*',
+        // ただし /api/auth/* はNextAuth.jsのルートハンドラーが先にキャッチするため
+        // 実際にはバックエンドにはプロキシされない
+        source: '/api/:path((?!auth/).*)',
         destination: `${backendUrl}/api/:path*`,
       },
     ];
