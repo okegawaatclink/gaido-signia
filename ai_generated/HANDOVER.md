@@ -20,53 +20,79 @@ output_system/
 │   ├── .npmrc                  # min-release-age=7
 │   └── src/
 │       ├── lib/
-│       │   ├── api.ts          # JWTトークン管理・apiRequest()/apiUploadRequest()ラッパー・Book型/Sign型
+│       │   ├── api.ts          # JWTトークン管理・apiRequest()/apiUploadRequest()ラッパー・Book/Sign/Fan/SignedBook型
 │       │   ├── auth.ts         # NextAuth.js設定 (Google/Apple Provider)
 │       │   └── session-provider.tsx  # SessionProviderラッパー (Client Component)
+│       ├── components/
+│       │   ├── layout/
+│       │   │   ├── Header.tsx      # ファン向けヘッダー (ロゴ・ユーザー名・ログアウト)
+│       │   │   └── Footer.tsx      # フッター (利用規約・プライバシーポリシー)
+│       │   ├── book/
+│       │   │   ├── BookCard.tsx    # 著者向け書籍カード (ステータス・削除)
+│       │   │   ├── BookList.tsx    # 書籍一覧
+│       │   │   └── FanBookCard.tsx # ファン向け書籍カード (署名付きURL表紙・サイン種別・宛名)
+│       │   └── sign/
+│       │       └── SignComposer.tsx  # サイン合成プレビュー (A4比率・S3画像fetch・宛名表示)
 │       └── app/
 │           ├── (auth)/login/   # ログインページ (/login) - ソーシャル+メール統合
 │           ├── (auth)/callback/ # OAuthコールバック処理ページ
 │           ├── api/auth/[...nextauth]/ # NextAuth.js APIルートハンドラー
-│           ├── bookshelf/      # 本棚ページ (ファンのログイン後リダイレクト先)
+│           ├── bookshelf/      # 本棚ページ (書籍一覧・空状態・エラー処理、CSR)
 │           ├── admin/login/    # 管理者ログイン (/admin/login URL)
 │           ├── admin/dashboard/ # 管理者ダッシュボード
 │           ├── author/books/  # 著者書籍管理
 │           │   ├── page.tsx        # 書籍一覧（削除機能付き）
 │           │   └── new/page.tsx    # 書籍登録（ドラッグ&ドロップ・進捗バー付き）
-│           └── author/signs/  # 著者サイン管理
-│               ├── page.tsx        # サイン一覧（デフォルトバッジ・削除機能付き）
-│               ├── new/page.tsx    # サイン作成（Canvas手書き・プレビュー・フォーム）
-│               └── [signId]/page.tsx # サイン詳細・編集（再作成モード・削除確認）
+│           ├── author/signs/  # 著者サイン管理
+│           │   ├── page.tsx        # サイン一覧（デフォルトバッジ・削除機能付き）
+│           │   ├── new/page.tsx    # サイン作成（Canvas手書き・プレビュー・フォーム）
+│           │   └── [signId]/page.tsx # サイン詳細・編集（再作成モード・削除確認）
+│           └── author/compose/ # サイン合成
+│               └── page.tsx        # 合成操作画面（書籍/サイン選択・ファン選択・共通/個別モード）
 └── backend/
-    ├── package.json            # Express + pg + node-pg-migrate + jest/ts-jest
+    ├── package.json            # Express + pg + node-pg-migrate + jest/ts-jest + pdf-lib + jszip
     ├── .npmrc                  # min-release-age=7
-    ├── test/                   # ユニットテスト (jest + ts-jest)
-    │   └── services/
-    │       ├── auth.service.test.ts
-    │       ├── oauth.service.test.ts  # OAuthサービスユニットテスト7件
-    │       └── books.service.test.ts  # 書籍サービスユニットテスト18件
+    ├── test/                   # ユニットテスト (jest + ts-jest) 130件
+    │   ├── services/
+    │   │   ├── auth.service.test.ts
+    │   │   ├── oauth.service.test.ts  # OAuthサービスユニットテスト7件
+    │   │   ├── books.service.test.ts  # 書籍サービスユニットテスト18件
+    │   │   ├── pdf.service.test.ts    # PDFサイン合成ユニットテスト5件
+    │   │   ├── epub.service.test.ts   # EPUBサイン合成ユニットテスト7件
+    │   │   └── compose.service.test.ts # 合成サービスユニットテスト12件
+    │   └── controllers/
+    │       └── compose.controller.test.ts # 合成コントローラーユニットテスト7件
     └── src/
         ├── index.ts            # Expressサーバー (port 3002)
         ├── routes/
-        │   ├── index.ts        # /api/health + /api/auth + /api/books + /api/signs
+        │   ├── index.ts        # /api/health + /api/auth + /api/books + /api/signs + /api/compose + /api/fan
         │   ├── auth.routes.ts  # POST /login /logout /oauth, GET /me
-        │   ├── books.routes.ts # GET/POST /books, GET/PUT/DELETE /books/:id (multer 50MB)
-        │   └── signs.routes.ts # GET/POST /signs, GET/PUT/DELETE /signs/:id (multer 10MB, PNG only, author role only)
+        │   ├── books.routes.ts # GET/POST /books, GET/PUT/DELETE /books/:id, GET /books/:id/fans
+        │   ├── signs.routes.ts # GET/POST /signs, GET/PUT/DELETE /signs/:id (multer 10MB, PNG only, author role only)
+        │   ├── compose.routes.ts # POST /compose, GET /compose/:id (author role only)
+│   └── fan.routes.ts   # GET /fan/bookshelf, GET /fan/books/:id/read (fan role only)
         ├── controllers/
         │   ├── auth.controller.ts
         │   ├── oauth.controller.ts   # POST /api/auth/oauth
-        │   ├── books.controller.ts   # 書籍CRUD・ファイルアップロード処理
-        │   └── signs.controller.ts   # サインCRUD・multipart/form-dataパース
+        │   ├── books.controller.ts   # 書籍CRUD・ファイルアップロード処理・getBookFans
+        │   ├── signs.controller.ts   # サインCRUD・multipart/form-dataパース
+        │   ├── compose.controller.ts # 合成ジョブ実行・状態取得
+│   └── fan.controller.ts   # 本棚取得・書籍閲覧URL取得
         ├── services/
         │   ├── auth.service.ts       # login/getMe (タイミング攻撃対策)
         │   ├── oauth.service.ts      # OAuthログイン/ファンアカウント作成
-        │   ├── books.service.ts      # 書籍CRUD・S3アップロード・RBAC
+        │   ├── books.service.ts      # 書籍CRUD・S3アップロード・RBAC・getBookFans
         │   ├── signs.service.ts      # サインCRUD・PNG検証・S3アップロード・RBAC
-        │   └── storage.service.ts    # S3/MinIO ファイル操作 (SSEオプション)
+        │   ├── storage.service.ts    # S3/MinIO ファイル操作 (SSEオプション)
+        │   ├── pdf.service.ts        # PDFサイン合成 (pdf-lib・2ページ目挿入・画像埋込)
+        │   ├── epub.service.ts       # EPUBサイン合成 (JSZip・OPF解析・spine先頭挿入)
+        │   ├── compose.service.ts    # 合成オーケストレーション (S3DL→合成→S3UP→book_access付与)
+│   └── fan.service.ts      # ファン向け本棚・書籍閲覧URL (book_access+books+signed_booksのJOIN)
         └── models/
             ├── user.model.ts
             ├── book.model.ts         # 書籍モデル (CRUD・動的SET句)
-            └── sign.model.ts         # サインモデル (CRUD・is_defaultトランザクション排他制御)
+            ├── sign.model.ts         # サインモデル (CRUD・is_defaultトランザクション排他制御)
+            └── signed-book.model.ts  # 合成済み書籍モデル (CRUD・signed_booksテーブル)
 ```
 
 ## ビルド・起動方法
@@ -106,6 +132,18 @@ docker compose up -d
 - **isDefaultのmultipart文字列パース**: multipart/form-dataで送信される `isDefault` は `'true'/'false'` 文字列。コントローラーで `req.body.isDefault === 'true'` として明示的にbooleanに変換すること
 - **タブレットでのスクロール抑止**: iPad Safariで描画中にページスクロールが発生する問題はCanvasラッパーdivに `{ passive: false }` でtouchmoveイベントリスナーを追加し `e.preventDefault()` することで解決
 - **SignCanvas型安全性**: `@typescript-eslint/no-explicit-any` を使わずFabric.jsの動的importを型安全にするため `FabricCanvasInstance` / `FabricObject` インターフェースを定義し `as unknown as FabricCanvasInstance` でキャスト
+- **EPUBのOPF解析**: EPUB仕様ではcontainer.xmlにOPFパスが記載される。`META-INF/container.xml` の `<rootfile full-path="..."/>` からOPFパスを取得し、JSZipでfile(path).async('string')で読み込む。spine先頭挿入は `<spine...>` タグを正規表現でキャプチャして直後に`<itemref>`を挿入
+- **book_access UNIQUEなしSELECT-then-INSERT**: `book_access`テーブルに(book_id,fan_id)のUNIQUE制約がないため、`ON CONFLICT DO UPDATE`は使用不可。SELECT→既存ならUPDATE、なければINSERTのパターン
+- **合成エラーの分離**: ComposeServiceでファンごとの合成を個別try-catchでラップし、1ファンのエラーが他ファンの処理を止めない設計。successCount/errorCountを集計して返す
+- **JSZip file()メソッドの型曖昧さ**: `file(path)` (読込) と `file(path, content)` (書込) は同名メソッド。ユニットテストでモックする際は引数の数 (content !== undefined) で read/write を区別する
+- **Jest ClassのinstanceofがESModuleモックで失敗**: `jest.mock()`でクラスをモックするとprototypeチェーンが切れて`rejects.toThrow(SomeError)`がコンストラクタ比較で失敗する。`rejects.toThrow('エラーメッセージ文字列')`による文字列マッチに変更する
+- **validationResult のTypeScript型キャスト**: express-validatorの`validationResult`はジェネリック型`ResultFactory<E>`を返すため`as jest.Mock`への直接キャストがコンパイルエラーになる。`as unknown as jest.Mock`の二段階キャストで回避
+
+- **ランディングページSSG**: ランディングページ（`app/page.tsx`）はServer Componentとして実装しSSGで生成。Client Componentをimportする場合でも、イベントハンドラーを持つコンポーネントは `'use client'` を付けること
+- **FooterのhoverはClient Component必須**: `onMouseEnter/onMouseLeave` イベントハンドラーはClient Componentでしか使えない。Server Componentのランディングページに使うFooterは `'use client'` が必要
+- **FanBookCardのNext.js Image unoptimized**: MinIOの署名付きURLはドメインが動的に変わるため `unoptimized` プロパティを使用。`next.config.js` の `remotePatterns` に加えて `unoptimized` を設定することで外部URLを直接表示できる
+- **本棚APIのJOINクエリ設計**: `book_access` をベースに `books`・`signed_books`・`signs` をLEFT JOINする。`fan_id = $1` インデックスを活用するため `WHERE ba.fan_id = $1` でフィルタすること
+- **署名付きURL生成のPartial Failure**: 表紙画像の署名付きURL生成が失敗しても、書籍一覧全体が失敗しないよう個別try-catchで `null` を返す設計にすること
 
 ## はまりポイント
 
@@ -118,6 +156,8 @@ docker compose up -d
 - **Fabric.js UndoはCanvas Objectsをスタックで管理**: `canvas.getObjects()` はimmutableではないため、各描画操作後に `[...canvas.getObjects()]` でコピーをスタックに積む。Undoは最後のスナップショットとの差分（追加されたオブジェクト）を除去して前状態に戻す
 - **NextAuth.js と `/api/auth/login` の競合**: `afterFiles` rewritesに `/api/auth/login` を入れても NextAuth.jsの `[...nextauth]` が先にマッチして400エラーになる。`beforeFiles` を使うこと
 - **multer パッケージ未登録**: Dockerコンテナ内で `npm install multer` しても `package.json` が更新されない。ホスト側のディレクトリで `npm install multer @types/multer --save` を実行すること
+- **epub.service.test.ts JSZipモックのTupleエラー**: `fileMock.mock.calls.find(...)`で`call[1]`にアクセスするとTypeScriptが`Tuple type '[path: string]' of length '1'`と推論してエラー。モック実装内で`writtenFiles: Record<string, unknown>`マップに書き込みを記録するように設計変更することで回避
+- **バックエンドコンテナへの新規ファイル反映**: `docker compose up -d` ではDockerイメージを再ビルドしない。新規TSファイルをコンテナに反映するには `docker compose build && docker compose up -d` を実行すること
 
 ## 実装済み機能
 - PBI #6: 開発環境セットアップ (Next.js + Express + PostgreSQL + MinIO + Docker Compose)
@@ -127,3 +167,5 @@ docker compose up -d
 - PBI #10: 著者が登録済み書籍を一覧・編集・削除できる (BookCard/BookListコンポーネント・書籍詳細編集画面・ステータス変更・確認ダイアログ付き削除)
 - PBI #11: 著者がタブレットで手書きサインを作成・登録できる (Fabric.js v6 Canvas・SignCanvas/SignPreviewコンポーネント・サインCRUD API・PNG専用multer・is_default排他制御)
 - PBI #12: 著者が作成済みサインを一覧・編集・削除できる (SignCardコンポーネント・サイン一覧/詳細・編集画面・JWT認証付き画像fetch・再作成モード・削除確認ダイアログ)
+- PBI #13: 著者がサインを電子書籍に合成できる (pdf-lib PDF合成・JSZip EPUB合成・ComposeService・合成API・サイン合成画面・SignComposerプレビュー)
+- PBI #14: ファンが本棚でサイン入り書籍一覧を確認できる (FanService・本棚API・ランディングページ・本棚画面・Header/Footer/FanBookCardコンポーネント)
