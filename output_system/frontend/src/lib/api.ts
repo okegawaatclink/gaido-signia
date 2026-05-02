@@ -366,3 +366,77 @@ export async function apiUpdateBookMetadata(
 export async function apiDeleteBook(bookId: string): Promise<void> {
   return apiRequest(`/books/${bookId}`, { method: 'DELETE' });
 }
+
+// ===== サインAPI =====
+
+/**
+ * サインエンティティ型定義
+ * バックエンドの Sign 型に対応する
+ */
+export interface Sign {
+  id: string;
+  authorId: string;
+  name: string;
+  type: 'common' | 'individual';
+  imageKey: string | null;
+  canvasData: Record<string, unknown> | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * サイン一覧を取得する
+ * 著者自身のサインのみ返される
+ *
+ * @returns サインの配列と件数
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetSigns(): Promise<{ signs: Sign[]; count: number }> {
+  return apiRequest('/signs');
+}
+
+/**
+ * サインを新規作成する
+ * PNG画像とCanvas描画データをサーバーに送信する
+ *
+ * @param formData - サインデータ（signImage, name, type, canvasData, isDefault）
+ * @returns 作成したサインオブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiCreateSign(formData: FormData): Promise<{ sign: Sign }> {
+  return apiUploadRequest<{ sign: Sign }>('/signs', formData, 'POST');
+}
+
+/**
+ * サイン詳細を取得する
+ *
+ * @param signId - サインID
+ * @returns サインオブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetSign(signId: string): Promise<{ sign: Sign }> {
+  return apiRequest(`/signs/${signId}`);
+}
+
+/**
+ * サインを更新する
+ *
+ * @param signId - サインID
+ * @param formData - 更新データ（signImage, name, type, canvasData, isDefault）
+ * @returns 更新後のサインオブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiUpdateSign(signId: string, formData: FormData): Promise<{ sign: Sign }> {
+  return apiUploadRequest<{ sign: Sign }>(`/signs/${signId}`, formData, 'PUT');
+}
+
+/**
+ * サインを削除する
+ *
+ * @param signId - サインID
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiDeleteSign(signId: string): Promise<void> {
+  return apiRequest(`/signs/${signId}`, { method: 'DELETE' });
+}
