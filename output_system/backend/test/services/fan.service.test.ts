@@ -246,15 +246,20 @@ describe('FanService', () => {
      * 【期待結果】署名付きURLと有効期限が返される
      */
     it('should return signed URL for owned book with signed file', async () => {
-      // Arrange
-      mockDb.query = jest.fn().mockResolvedValue({
-        rows: [{
-          id: 'access-id-1234',
-          file_key: 'books/uuid-1234/test.pdf',
-          signed_file_key: 'signed/uuid-1234/test-signed.pdf',
-        }],
-        rowCount: 1,
-      });
+      // Arrange: 1回目（書籍存在確認）は書籍あり、2回目（アクセス権確認）はアクセス権あり
+      mockDb.query = jest.fn()
+        .mockResolvedValueOnce({
+          rows: [{ id: TEST_BOOK_ID }],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'access-id-1234',
+            file_key: 'books/uuid-1234/test.pdf',
+            signed_file_key: 'signed/uuid-1234/test-signed.pdf',
+          }],
+          rowCount: 1,
+        });
       mockStorageService.getSignedUrl = jest.fn().mockResolvedValue(
         'https://minio.example.com/signed/presigned-url'
       );
@@ -278,15 +283,20 @@ describe('FanService', () => {
      * 【期待結果】元書籍ファイルの署名付きURLが返される
      */
     it('should return signed URL using original file key when no signed file', async () => {
-      // Arrange: signed_file_keyがnull（未合成）
-      mockDb.query = jest.fn().mockResolvedValue({
-        rows: [{
-          id: 'access-id-1234',
-          file_key: 'books/uuid-1234/test.pdf',
-          signed_file_key: null,
-        }],
-        rowCount: 1,
-      });
+      // Arrange: 1回目（書籍存在確認）は書籍あり、2回目（アクセス権確認）はsigned_file_keyがnull（未合成）
+      mockDb.query = jest.fn()
+        .mockResolvedValueOnce({
+          rows: [{ id: TEST_BOOK_ID }],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'access-id-1234',
+            file_key: 'books/uuid-1234/test.pdf',
+            signed_file_key: null,
+          }],
+          rowCount: 1,
+        });
       mockStorageService.getSignedUrl = jest.fn().mockResolvedValue(
         'https://minio.example.com/books/presigned-url'
       );
@@ -308,11 +318,16 @@ describe('FanService', () => {
      * 【期待結果】ForbiddenErrorがスローされる
      */
     it('should throw ForbiddenError when fan does not own the book', async () => {
-      // Arrange: DBがアクセス権なし（空の結果）
-      mockDb.query = jest.fn().mockResolvedValue({
-        rows: [],
-        rowCount: 0,
-      });
+      // Arrange: 1回目（書籍存在確認）は書籍あり、2回目（アクセス権確認）は空
+      mockDb.query = jest.fn()
+        .mockResolvedValueOnce({
+          rows: [{ id: 'other-book-id' }],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [],
+          rowCount: 0,
+        });
 
       // Act & Assert: ForbiddenErrorがスローされる
       await expect(
@@ -324,19 +339,44 @@ describe('FanService', () => {
 
     /**
      * 【テスト対象】FanService.getBookReadUrl
+     * 【テスト内容】存在しない書籍IDを指定した場合
+     * 【期待結果】NotFoundErrorがスローされる（404）
+     */
+    it('should throw NotFoundError when book does not exist', async () => {
+      // Arrange: 1回目（書籍存在確認）で空の結果を返す
+      mockDb.query = jest.fn().mockResolvedValueOnce({
+        rows: [],
+        rowCount: 0,
+      });
+
+      // Act & Assert: NotFoundErrorがスローされる
+      await expect(
+        fanService.getBookReadUrl(TEST_FAN_ID, 'nonexistent-book-id')
+      ).rejects.toMatchObject({
+        statusCode: 404,
+      });
+    });
+
+    /**
+     * 【テスト対象】FanService.getBookReadUrl
      * 【テスト内容】クエリにファンIDと書籍IDが正しく使われているか
      * 【期待結果】DBクエリがfanIdとbookIdで呼ばれる
      */
     it('should query database with correct fanId and bookId', async () => {
-      // Arrange
-      mockDb.query = jest.fn().mockResolvedValue({
-        rows: [{
-          id: 'access-id-1234',
-          file_key: 'books/uuid-1234/test.pdf',
-          signed_file_key: null,
-        }],
-        rowCount: 1,
-      });
+      // Arrange: 1回目（書籍存在確認）は書籍あり、2回目（アクセス権確認）はアクセス権あり
+      mockDb.query = jest.fn()
+        .mockResolvedValueOnce({
+          rows: [{ id: TEST_BOOK_ID }],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'access-id-1234',
+            file_key: 'books/uuid-1234/test.pdf',
+            signed_file_key: null,
+          }],
+          rowCount: 1,
+        });
       mockStorageService.getSignedUrl = jest.fn().mockResolvedValue('https://example.com/url');
 
       // Act
