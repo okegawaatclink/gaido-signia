@@ -126,7 +126,9 @@ export class StorageService {
         Body: options.body,
         ContentType: options.contentType,
         // AES-256でサーバーサイド暗号化（機密データの保護）
-        ServerSideEncryption: options.serverSideEncryption || 'AES256',
+        // AES-256サーバーサイド暗号化: undefinedの場合は暗号化なし（MinIO開発環境ではKMS未設定のためSSE非対応）
+        // AWS S3本番環境では S3_ENABLE_SSE=true を設定して有効化すること
+        ServerSideEncryption: options.serverSideEncryption,
         Metadata: options.metadata,
       });
 
