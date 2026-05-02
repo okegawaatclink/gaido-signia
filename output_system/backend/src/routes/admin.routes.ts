@@ -2,9 +2,12 @@
  * @file admin.routes.ts
  * @description 管理者向け API ルーター
  *
- * 著者アカウント管理エンドポイントを定義する。
+ * 著者アカウント管理・統計情報・書籍管理エンドポイントを定義する。
  *
  * エンドポイント:
+ * - GET    /api/admin/stats         : ダッシュボード統計情報取得（著者数・書籍数・ファン数・合成数・監査ログ）
+ * - GET    /api/admin/books         : 全書籍一覧取得（検索・フィルタ対応）
+ * - GET    /api/admin/books/:id     : 書籍詳細取得
  * - GET    /api/admin/authors       : 著者一覧取得
  * - POST   /api/admin/authors       : 著者アカウント作成
  * - GET    /api/admin/authors/:id   : 著者詳細取得（登録書籍一覧含む）
@@ -18,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import { authenticate } from '../middleware/auth.middleware';
 import { adminOnly } from '../middleware/rbac.middleware';
 import {
@@ -34,8 +37,77 @@ import {
   getApiKey,
   deactivateApiKey,
 } from '../controllers/api-key.controller';
+import {
+  getStats,
+  getAdminBooks,
+  getAdminBook,
+} from '../controllers/stats.controller';
 
 const router = Router();
+
+// ======= 統計情報・ダッシュボードルート =======
+
+/**
+ * GET /api/admin/stats
+ * ダッシュボード統計情報取得
+ * 著者数・書籍数・ファン数・サイン合成数と最近の操作履歴を返す
+ * admin ロールのみアクセス可能
+ */
+router.get('/stats', authenticate, adminOnly, getStats);
+
+// ======= 書籍管理ルート =======
+
+/**
+ * GET /api/admin/books
+ * 全書籍一覧取得（検索・フィルタ対応）
+ * admin ロールのみアクセス可能
+ *
+ * クエリパラメータ:
+ * - search: タイトルの部分一致検索キーワード（オプション）
+ * - status: ステータスフィルタ（draft/published/archived）（オプション）
+ * - page: ページ番号（デフォルト: 1）
+ * - limit: 1ページあたりの件数（デフォルト: 20、最大: 100）
+ */
+router.get(
+  '/books',
+  authenticate,
+  adminOnly,
+  [
+    // searchはオプションの文字列
+    query('search').optional().isString().withMessage('検索キーワードは文字列で指定してください').trim(),
+    // statusはオプションのステータス値
+    query('status')
+      .optional()
+      .isIn(['draft', 'published', 'archived'])
+      .withMessage('statusはdraft/published/archivedのいずれかで指定してください'),
+    // pageはオプションの正整数
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('pageは1以上の整数で指定してください'),
+    // limitはオプションの正整数（最大100）
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('limitは1〜100の整数で指定してください'),
+  ],
+  getAdminBooks
+);
+
+/**
+ * GET /api/admin/books/:id
+ * 書籍詳細取得（著者情報・ファンアクセス数含む）
+ *
+ * パラメータバリデーション:
+ * - id: UUID 形式
+ */
+router.get(
+  '/books/:id',
+  authenticate,
+  adminOnly,
+  [param('id').isUUID().withMessage('書籍 ID が不正です')],
+  getAdminBook
+);
 
 // ======= 著者管理ルート =======
 
