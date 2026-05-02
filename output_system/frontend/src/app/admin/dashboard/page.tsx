@@ -1,16 +1,18 @@
 /**
  * @file admin/dashboard/page.tsx
- * @description 管理者ダッシュボード（プレースホルダー）
+ * @description 管理者ダッシュボード
  *
- * ログイン後の管理者向け画面。
- * 後続のPBIで本実装を行う。
+ * ログイン後の管理者向けトップ画面。
+ * 管理機能へのナビゲーションとサマリー情報を提供する。
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getToken, apiGetMe, apiLogout, AuthUser } from '../../../lib/api';
+import Sidebar from '../../../components/layout/Sidebar';
 
 /**
  * 管理者ダッシュボードコンポーネント
@@ -56,34 +58,83 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p>読み込み中...</p>
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div style={{ width: '240px', backgroundColor: '#1e293b' }} />
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <p style={{ color: '#6b7280' }}>読み込み中...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.8rem', color: '#111' }}>管理ダッシュボード</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ color: '#555' }}>{user?.name}（管理者）</span>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+      {/* サイドバーナビゲーション */}
+      <Sidebar />
+
+      {/* メインコンテンツ */}
+      <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+        {/* ページヘッダー */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem',
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: '700', color: '#111827', margin: 0 }}>
+              管理ダッシュボード
+            </h1>
+            <p style={{ color: '#6b7280', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+              ようこそ、{user?.name} さん
+            </p>
+          </div>
           <button
             onClick={handleLogout}
             style={{
               padding: '0.5rem 1rem',
               border: '1px solid #dc2626',
               borderRadius: '6px',
-              background: 'none',
+              backgroundColor: 'transparent',
               color: '#dc2626',
               cursor: 'pointer',
+              fontSize: '0.875rem',
             }}
           >
             ログアウト
           </button>
         </div>
-      </div>
-      <p style={{ color: '#666' }}>管理ダッシュボードは後続のPBIで実装予定です。</p>
+
+        {/* クイックアクション */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+          {/* 著者管理カード */}
+          <Link
+            href="/admin/authors"
+            style={{ textDecoration: 'none' }}
+          >
+            <div
+              style={{
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s',
+              }}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>👤</div>
+              <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
+                著者管理
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: 0 }}>
+                著者アカウントの作成・編集・無効化
+              </p>
+            </div>
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

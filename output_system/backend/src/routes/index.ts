@@ -12,6 +12,7 @@ import booksRouter from './books.routes';
 import signsRouter from './signs.routes';
 import composeRouter from './compose.routes';
 import fanRouter from './fan.routes';
+import adminRouter from './admin.routes';
 
 /**
  * メインAPIルーター
@@ -50,8 +51,10 @@ router.use('/compose', composeRouter);
 // ファン向けAPIルーターをマウント
 router.use('/fan', fanRouter);
 
+// 管理者向けAPIルーターをマウント（admin ロールのみアクセス可能）
+router.use('/admin', adminRouter);
+
 // TODO: 以下の各ルーターは後続のTaskで実装する
-// router.use('/admin', adminRouter);
 // router.use('/external', externalRouter);
 
 export default router;
