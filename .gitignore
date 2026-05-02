@@ -1,71 +1,33 @@
-.box/
-
-# ===== Pockode内部ファイル =====
-.pockode/
-
-# ===== 環境変数・機密情報 =====
-.env
-.env.*
-*.local
-!.env.example
-# フロントエンド環境変数（テンプレートはコミット対象外）
-output_system/frontend/.env.local
-output_system/backend/.env
-
-# ===== Node.js依存パッケージ =====
+# Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+__pycache__/
+.env
+.env.local
 
-# ===== ビルド成果物 =====
+# Build outputs
 dist/
 build/
-out/
-.next/
-.turbo/
+*.log
 
-# ===== TypeScriptキャッシュ =====
-*.tsbuildinfo
-
-# ===== IDE設定 =====
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# ===== OS固有ファイル =====
+# OS
 .DS_Store
 Thumbs.db
 
-# ===== ログファイル =====
-*.log
-logs/
+# Testing
+.playwright-cli/
 
-# ===== テスト結果 =====
-coverage/
-test-results/
-playwright-report/
-playwright/.cache/
+# Input files（機密情報）
+ai_generated/input/
+ai_generated/legal/
+ai_generated/issue_numbers.json
+ai_generated/issues.json
 
-# ===== 一時ファイル =====
-*.tmp
-*.temp
-
-# ===== MCP設定（ローカル固有情報のため除外） =====
-.mcp.json
-
-# ===== Python仮想環境 =====
-venv/
-.venv/
-__pycache__/
-*.pyc
-
-# ===== 注意: 以下はコミット対象（exclude対象にしないこと） =====
-# ai_generated/        - 要件ファイル・スクリーンショット等
-# cost_metrics.jsonl   - コスト記録
-# session_*/           - セッションファイル
-# .claude/             - Claude Code設定
-# docs_with_ai/        - AIも利用するドキュメント
-# CLAUDE.md            - 指示内容
-# ssl-certificates/    - SSL証明書
+# Local test files
+ai_generated/test_upload.pdf
+gaido_progress.json
