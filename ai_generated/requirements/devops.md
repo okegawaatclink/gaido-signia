@@ -11,7 +11,7 @@ services:
       context: ..
       dockerfile: output_system/Dockerfile
     ports:
-      - "3001:3001"
+      - "3005:3001"
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
@@ -25,7 +25,7 @@ services:
       context: ..
       dockerfile: output_system/Dockerfile.backend
     ports:
-      - "3002:3002"
+      - "3006:3002"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://signia:signia_pass@db:5432/signia
@@ -87,8 +87,8 @@ docker compose down
 
 ## アクセスURL
 
-- フロントエンド（ホストから）: http://localhost:3001
-- バックエンドAPI（ホストから）: http://localhost:3002
+- フロントエンド（ホストから）: http://localhost:3005
+- バックエンドAPI（ホストから）: http://localhost:3006
 - フロントエンド（コンテナ内から）: http://okegawaatclink-gaido-signia-output-system:3001
 - バックエンドAPI（コンテナ内から）: http://okegawaatclink-gaido-signia-output-system-backend:3002
 

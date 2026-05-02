@@ -23,8 +23,8 @@ services:
         # Next.jsのrewritesで /api/* → バックエンドにプロキシされる
         NEXT_PUBLIC_API_URL: /api
     ports:
-      # ホストポート3001 -> コンテナポート3001
-      - "3001:3001"
+      # ホストポート3005 -> コンテナポート3001
+      - "3005:3001"
     environment:
       - NODE_ENV=development
       # NEXT_PUBLIC_API_URL: クライアント（ブラウザ）からアクセスするAPIのベースURL
@@ -41,7 +41,7 @@ services:
       - BACKEND_API_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
       # NEXTAUTH_URL: NextAuth.jsがOAuthコールバックURLを生成する際のベースURL
       # 本番環境では実際のドメインに変更すること
-      - NEXTAUTH_URL=http://localhost:3001
+      - NEXTAUTH_URL=http://localhost:3005
       # AUTH_SECRET: NextAuth.jsのJWT署名・暗号化に使用するシークレットキー
       # 本番環境では強力なランダム文字列（最低32文字）に変更すること
       # 生成コマンド: openssl rand -base64 32
@@ -69,8 +69,8 @@ services:
       context: ..
       dockerfile: output_system/Dockerfile.backend
     ports:
-      # ホストポート3002 -> コンテナポート3002
-      - "3002:3002"
+      # ホストポート3006 -> コンテナポート3002
+      - "3006:3002"
     environment:
       - NODE_ENV=development
       # PostgreSQL接続文字列（db サービスのコンテナ名で指定）
