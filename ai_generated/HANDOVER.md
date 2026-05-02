@@ -20,7 +20,7 @@ output_system/
 │   ├── .npmrc                  # min-release-age=7
 │   └── src/
 │       ├── lib/
-│       │   ├── api.ts          # JWTトークン管理・apiRequest()/apiUploadRequest()ラッパー・Book型
+│       │   ├── api.ts          # JWTトークン管理・apiRequest()/apiUploadRequest()ラッパー・Book型/Sign型
 │       │   ├── auth.ts         # NextAuth.js設定 (Google/Apple Provider)
 │       │   └── session-provider.tsx  # SessionProviderラッパー (Client Component)
 │       └── app/
@@ -30,9 +30,11 @@ output_system/
 │           ├── bookshelf/      # 本棚ページ (ファンのログイン後リダイレクト先)
 │           ├── admin/login/    # 管理者ログイン (/admin/login URL)
 │           ├── admin/dashboard/ # 管理者ダッシュボード
-│           └── author/books/  # 著者書籍管理
-│               ├── page.tsx        # 書籍一覧（削除機能付き）
-│               └── new/page.tsx    # 書籍登録（ドラッグ&ドロップ・進捗バー付き）
+│           ├── author/books/  # 著者書籍管理
+│           │   ├── page.tsx        # 書籍一覧（削除機能付き）
+│           │   └── new/page.tsx    # 書籍登録（ドラッグ&ドロップ・進捗バー付き）
+│           └── author/signs/  # 著者サイン管理
+│               └── new/page.tsx    # サイン作成（Canvas手書き・プレビュー・フォーム）
 └── backend/
     ├── package.json            # Express + pg + node-pg-migrate + jest/ts-jest
     ├── .npmrc                  # min-release-age=7
@@ -44,21 +46,25 @@ output_system/
     └── src/
         ├── index.ts            # Expressサーバー (port 3002)
         ├── routes/
-        │   ├── index.ts        # /api/health + /api/auth + /api/books
+        │   ├── index.ts        # /api/health + /api/auth + /api/books + /api/signs
         │   ├── auth.routes.ts  # POST /login /logout /oauth, GET /me
-        │   └── books.routes.ts # GET/POST /books, GET/PUT/DELETE /books/:id (multer 50MB)
+        │   ├── books.routes.ts # GET/POST /books, GET/PUT/DELETE /books/:id (multer 50MB)
+        │   └── signs.routes.ts # GET/POST /signs, GET/PUT/DELETE /signs/:id (multer 10MB, PNG only, author role only)
         ├── controllers/
         │   ├── auth.controller.ts
         │   ├── oauth.controller.ts   # POST /api/auth/oauth
-        │   └── books.controller.ts   # 書籍CRUD・ファイルアップロード処理
+        │   ├── books.controller.ts   # 書籍CRUD・ファイルアップロード処理
+        │   └── signs.controller.ts   # サインCRUD・multipart/form-dataパース
         ├── services/
         │   ├── auth.service.ts       # login/getMe (タイミング攻撃対策)
         │   ├── oauth.service.ts      # OAuthログイン/ファンアカウント作成
         │   ├── books.service.ts      # 書籍CRUD・S3アップロード・RBAC
+        │   ├── signs.service.ts      # サインCRUD・PNG検証・S3アップロード・RBAC
         │   └── storage.service.ts    # S3/MinIO ファイル操作 (SSEオプション)
         └── models/
             ├── user.model.ts
-            └── book.model.ts         # 書籍モデル (CRUD・動的SET句)
+            ├── book.model.ts         # 書籍モデル (CRUD・動的SET句)
+            └── sign.model.ts         # サインモデル (CRUD・is_defaultトランザクション排他制御)
 ```
 
 ## ビルド・起動方法
@@ -87,8 +93,15 @@ docker compose up -d
 - **アップロード進捗バー（シミュレーション）**: fetch APIはネイティブのアップロード進捗イベントを持たないため、`setInterval` で0→90%まで疑似的に進め、完了時に100%にする
 - **books.service.ts SSE設定**: `getServerSideEncryption()` ヘルパーで `S3_ENABLE_SSE=true` のときのみ `'AES256'` を返し、それ以外は `undefined`（storage.service.ts側でundefinedなら省略）
 - **タイミング攻撃対策**: ユーザーが存在しない場合も必ず `bcrypt.compare(password, DUMMY_HASH)` を実行
-- **Jest 30でのカスタムErrorのinstanceof**: `.statusCode === 401` のようなプロパティ検証で代替
+- **Jest 30でのカスタムErrorのinstanceof**: `.statusCode === 401` のようなプロパティ検証で代替。`.rejects.toThrow(NotFoundError)` は失敗する。`.rejects.toMatchObject({ statusCode: 404 })` を使うこと
 - **AWS SDK v3 exact pin `3.693.0`**: `^` は付けない（OOMリスク）
+- **Fabric.js v6とSSR非互換**: Fabric.jsはブラウザのCanvas APIを必要とするためSSR時にエラー。Next.jsでは `dynamic(() => import('./SignCanvas'), { ssr: false })` で動的インポートし、コンポーネント内でも `useEffect` 内で `await import('fabric')` する
+- **SignCanvasのforwardRef**: 親コンポーネントから `getCanvasJSON()`, `getCanvasPNGBlob()`, `isEmpty()` を呼び出すため `forwardRef` + `useImperativeHandle` を使用
+- **is_default排他制御**: 同一著者で複数のデフォルトサインが生まれないようPostgreSQLトランザクション内でCASEを使って他のサインのis_defaultをfalseに更新してからINSERT/UPDATEを実行
+- **multer PNG専用フィルター**: サイン画像は透過PNGである必要があるためfileFilterでimage/png + .png拡張子のみ許可（BooksのPDF/EPUBとは別のmulterインスタンス）
+- **isDefaultのmultipart文字列パース**: multipart/form-dataで送信される `isDefault` は `'true'/'false'` 文字列。コントローラーで `req.body.isDefault === 'true'` として明示的にbooleanに変換すること
+- **タブレットでのスクロール抑止**: iPad Safariで描画中にページスクロールが発生する問題はCanvasラッパーdivに `{ passive: false }` でtouchmoveイベントリスナーを追加し `e.preventDefault()` することで解決
+- **SignCanvas型安全性**: `@typescript-eslint/no-explicit-any` を使わずFabric.jsの動的importを型安全にするため `FabricCanvasInstance` / `FabricObject` インターフェースを定義し `as unknown as FabricCanvasInstance` でキャスト
 
 ## はまりポイント
 
@@ -97,6 +110,8 @@ docker compose up -d
 - **auth.service.test.ts がDB接続**: `jest.mock('../../src/config/database')` と `jest.mock('../../src/models/user.model')` の両方が必要
 - **callback page と useSearchParams**: Suspenseなしで `useSearchParams()` を使うとビルドエラー
 - **MinIO KMS未設定エラー**: `storage.service.ts` で `ServerSideEncryption: options.serverSideEncryption || 'AES256'` とすると `undefined` を渡してもAES256が強制される。`||` ではなく `options.serverSideEncryption` をそのまま渡すこと
+- **バックエンドコンテナへの新規ファイル反映**: `docker compose up -d` ではDockerイメージを再ビルドしない。新規TSファイルをコンテナに反映するには `docker compose build backend && docker compose up -d backend` を実行すること
+- **Fabric.js UndoはCanvas Objectsをスタックで管理**: `canvas.getObjects()` はimmutableではないため、各描画操作後に `[...canvas.getObjects()]` でコピーをスタックに積む。Undoは最後のスナップショットとの差分（追加されたオブジェクト）を除去して前状態に戻す
 - **NextAuth.js と `/api/auth/login` の競合**: `afterFiles` rewritesに `/api/auth/login` を入れても NextAuth.jsの `[...nextauth]` が先にマッチして400エラーになる。`beforeFiles` を使うこと
 - **multer パッケージ未登録**: Dockerコンテナ内で `npm install multer` しても `package.json` が更新されない。ホスト側のディレクトリで `npm install multer @types/multer --save` を実行すること
 
@@ -106,3 +121,4 @@ docker compose up -d
 - PBI #8: ファンのGoogle/Apple IDソーシャルログイン (NextAuth.js v5・OAuth 2.0・fanアカウント自動作成)
 - PBI #9: 著者による電子書籍アップロード・登録 (multer + MinIO S3・RBAC・AES-256 SSEオプション・ドラッグ&ドロップUI)
 - PBI #10: 著者が登録済み書籍を一覧・編集・削除できる (BookCard/BookListコンポーネント・書籍詳細編集画面・ステータス変更・確認ダイアログ付き削除)
+- PBI #11: 著者がタブレットで手書きサインを作成・登録できる (Fabric.js v6 Canvas・SignCanvas/SignPreviewコンポーネント・サインCRUD API・PNG専用multer・is_default排他制御)

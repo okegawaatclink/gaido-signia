@@ -9,6 +9,7 @@
 import { Router, Request, Response } from 'express';
 import authRouter from './auth.routes';
 import booksRouter from './books.routes';
+import signsRouter from './signs.routes';
 
 /**
  * メインAPIルーター
@@ -38,8 +39,10 @@ router.use('/auth', authRouter);
 // 書籍APIルーターをマウント
 router.use('/books', booksRouter);
 
+// サインAPIルーターをマウント
+router.use('/signs', signsRouter);
+
 // TODO: 以下の各ルーターは後続のTaskで実装する
-// router.use('/signs', signsRouter);
 // router.use('/compose', composeRouter);
 // router.use('/fan', fanRouter);
 // router.use('/admin', adminRouter);
