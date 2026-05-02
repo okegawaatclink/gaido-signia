@@ -253,3 +253,38 @@ export async function deleteBook(req: Request, res: Response, next: NextFunction
     next(error);
   }
 }
+
+/**
+ * GET /api/books/:id/fans
+ * 書籍にアクセス権があるファン一覧を取得する
+ *
+ * サイン合成画面でのファン選択に使用する。
+ * book_access テーブルを参照して、書籍に対してアクセス権を持つファンの一覧を返す。
+ *
+ * レスポンス (200):
+ * - fans: ファンの配列（id, name, email）
+ * - count: ファン数
+ *
+ * @param req - Expressリクエストオブジェクト
+ * @param res - Expressレスポンスオブジェクト
+ * @param next - 次のミドルウェア関数
+ */
+export async function getBookFans(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    // 書籍の存在と所有権を確認
+    const book = await booksService.getBook(id, userId, 'author');
+
+    // book_access テーブルからファン一覧を取得
+    const fans = await booksService.getBookFans(book.id);
+
+    res.status(200).json({
+      fans,
+      count: fans.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+}

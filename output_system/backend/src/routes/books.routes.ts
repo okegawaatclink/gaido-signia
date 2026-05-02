@@ -26,6 +26,7 @@ import {
   getBooks,
   createBook,
   getBook,
+  getBookFans,
   updateBook,
   deleteBook,
 } from '../controllers/books.controller';
@@ -236,6 +237,21 @@ router.delete(
     param('id').isUUID().withMessage('書籍IDが不正です'),
   ],
   deleteBook
+);
+
+/**
+ * GET /api/books/:id/fans
+ * 書籍にアクセス権があるファン一覧を取得する
+ * サイン合成画面でファン選択に使用する
+ */
+router.get(
+  '/:id/fans',
+  authenticate,
+  requireRole('author'),
+  [
+    param('id').isUUID().withMessage('書籍IDが不正です'),
+  ],
+  getBookFans
 );
 
 export default router;

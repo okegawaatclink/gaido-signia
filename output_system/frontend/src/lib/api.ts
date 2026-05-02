@@ -440,3 +440,97 @@ export async function apiUpdateSign(signId: string, formData: FormData): Promise
 export async function apiDeleteSign(signId: string): Promise<void> {
   return apiRequest(`/signs/${signId}`, { method: 'DELETE' });
 }
+
+// ===== ファンAPI =====
+
+/**
+ * ファンエンティティ型定義（書籍アクセス権を持つファン）
+ */
+export interface Fan {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * 書籍にアクセス権があるファン一覧を取得する
+ * サイン合成画面のファン選択に使用する
+ *
+ * @param bookId - 書籍ID
+ * @returns ファンの配列と件数
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetBookFans(bookId: string): Promise<{ fans: Fan[]; count: number }> {
+  return apiRequest(`/books/${bookId}/fans`);
+}
+
+// ===== 合成API =====
+
+/**
+ * 合成結果エンティティ型定義（ファン1名分）
+ */
+export interface ComposeResult {
+  signedBookId: string;
+  fanId: string;
+  status: 'completed' | 'error';
+  errorMessage?: string;
+}
+
+/**
+ * 合成ジョブ結果型定義
+ */
+export interface ComposeJobResult {
+  bookId: string;
+  signId: string;
+  results: ComposeResult[];
+  successCount: number;
+  errorCount: number;
+}
+
+/**
+ * サイン入り書籍エンティティ型定義
+ */
+export interface SignedBook {
+  id: string;
+  bookId: string;
+  signId: string;
+  fanId: string;
+  recipientName: string | null;
+  signedFileKey: string | null;
+  status: 'processing' | 'completed' | 'error';
+  composedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * サイン合成を実行する
+ *
+ * @param bookId - 合成対象の書籍ID
+ * @param signId - 使用するサインID
+ * @param fanIds - 対象ファンIDの配列
+ * @param recipientNames - 個別サイン宛名マップ（fanIdをキーとした宛名の辞書）
+ * @returns 合成ジョブ結果
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiCompose(
+  bookId: string,
+  signId: string,
+  fanIds: string[],
+  recipientNames?: Record<string, string>
+): Promise<ComposeJobResult> {
+  return apiRequest('/compose', {
+    method: 'POST',
+    body: { bookId, signId, fanIds, recipientNames },
+  });
+}
+
+/**
+ * 合成結果を取得する
+ *
+ * @param signedBookId - サイン入り書籍ID
+ * @returns サイン入り書籍の詳細情報
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetSignedBook(signedBookId: string): Promise<{ signedBook: SignedBook }> {
+  return apiRequest(`/compose/${signedBookId}`);
+}
