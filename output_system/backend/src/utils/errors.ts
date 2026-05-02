@@ -67,3 +67,14 @@ export class ValidationError extends AppError {
     this.name = 'ValidationError';
   }
 }
+
+/**
+ * 競合エラー (409)
+ * リソースの重複や状態競合時に使用する（例: メールアドレス重複）
+ */
+export class ConflictError extends AppError {
+  constructor(message: string = 'リソースが競合しています') {
+    super(message, 409, 'CONFLICT');
+    this.name = 'ConflictError';
+  }
+}
