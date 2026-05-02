@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import authRouter from './auth.routes';
 
 /**
  * メインAPIルーター
@@ -30,8 +31,10 @@ router.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+// 認証APIルーターをマウント
+router.use('/auth', authRouter);
+
 // TODO: 以下の各ルーターは後続のTaskで実装する
-// router.use('/auth', authRouter);
 // router.use('/books', booksRouter);
 // router.use('/signs', signsRouter);
 // router.use('/compose', composeRouter);

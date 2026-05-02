@@ -18,13 +18,24 @@ services:
       # これにより ssl-certificates/ へアクセス可能になる
       context: ..
       dockerfile: output_system/Dockerfile
+      args:
+        # NEXT_PUBLIC_API_URL はビルド時に埋め込まれる（ブラウザからは相対パス/api経由でアクセス）
+        # Next.jsのrewritesで /api/* → バックエンドにプロキシされる
+        NEXT_PUBLIC_API_URL: /api
     ports:
       # ホストポート3001 -> コンテナポート3001
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      # バックエンドAPIのURLはコンテナ名で指定（コンテナ内からのアクセス）
-      - NEXT_PUBLIC_API_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
+      # NEXT_PUBLIC_API_URL: クライアント（ブラウザ）からアクセスするAPIのベースURL
+      # Next.jsのrewritesでバックエンドにプロキシされる（相対パスを使用）
+      # 注意: NEXT_PUBLIC_* 変数はビルド時にバンドルに埋め込まれるため、
+      #       コンテナ名（okegawaatclink-gaido-signia-output-system-backend）を
+      #       設定するとブラウザからアクセスできない
+      - NEXT_PUBLIC_API_URL=/api
+      # BACKEND_URL: Next.jsサーバー側からバックエンドにアクセスする際のURL
+      # next.config.jsのrewritesで使用する（コンテナ名でアクセス可能）
+      - BACKEND_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
       # ViteのホストアクセスをコンテナDockerホスト名で許可（Next.jsには不要だが設定を統一）
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=okegawaatclink-gaido-signia-output-system
     depends_on:
