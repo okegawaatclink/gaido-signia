@@ -10,28 +10,48 @@
     "typecheck": "tsc --noEmit",
     "migrate": "node-pg-migrate -j ts up --migrations-dir ./src/db/migrations",
     "migrate:down": "node-pg-migrate -j ts down --migrations-dir ./src/db/migrations",
-    "seed": "ts-node src/db/seeds/index.ts"
+    "seed": "ts-node src/db/seeds/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/test"],
+    "testMatch": ["**/*.test.ts", "**/*.spec.ts"],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/index.ts",
+      "!src/db/migrations/**",
+      "!src/db/seeds/**"
+    ]
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "helmet": "^8.0.0",
-    "node-pg-migrate": "^7.7.1",
-    "pg": "^8.13.1",
     "@aws-sdk/client-s3": "3.693.0",
     "@aws-sdk/s3-request-presigner": "3.693.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
     "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "winston": "^3.17.0",
-    "uuid": "^10.0.0"
+    "node-pg-migrate": "^7.7.1",
+    "pg": "^8.13.1",
+    "uuid": "^10.0.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.17.6",
@@ -40,6 +60,8 @@
     "@typescript-eslint/eslint-plugin": "^8.14.0",
     "@typescript-eslint/parser": "^8.14.0",
     "eslint": "^8.57.1",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"
