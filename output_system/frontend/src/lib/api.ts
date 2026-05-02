@@ -219,3 +219,129 @@ export function saveOAuthToken(backendToken: string): void {
 export async function apiGetMe(): Promise<{ user: AuthUser }> {
   return apiRequest('/auth/me');
 }
+
+// ===== 書籍API =====
+
+/**
+ * 書籍エンティティ型定義
+ * バックエンドの Book 型に対応する
+ */
+export interface Book {
+  id: string;
+  authorId: string;
+  title: string;
+  description: string | null;
+  format: 'pdf' | 'epub';
+  fileKey: string | null;
+  coverImageKey: string | null;
+  fileSize: number | null;
+  pageCount: number | null;
+  status: 'draft' | 'published' | 'archived';
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * multipart/form-data でファイルをアップロードする汎用APIリクエスト関数
+ * `apiRequest()` はJSON送信専用のため、ファイルアップロード時はこちらを使用する
+ *
+ * @param path - APIパス（例: '/books'）
+ * @param formData - アップロードするFormDataオブジェクト
+ * @param method - HTTPメソッド（デフォルト: POST）
+ * @returns レスポンスデータ
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiUploadRequest<T>(
+  path: string,
+  formData: FormData,
+  method: 'POST' | 'PUT' = 'POST'
+): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+
+  // JWTトークンを付与（Content-Typeはmultipart/form-dataにするためヘッダーに含めない）
+  // fetch APIがFormData渡し時に自動的にContent-Typeを設定するため、手動設定不要
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: formData,
+  });
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const errorData = data as Partial<ApiError>;
+    throw {
+      error: errorData?.error || 'UNKNOWN_ERROR',
+      message: errorData?.message || `HTTPエラー: ${response.status}`,
+      statusCode: response.status,
+    } as ApiError;
+  }
+
+  return data as T;
+}
+
+/**
+ * 書籍一覧を取得する
+ *
+ * @returns 書籍の配列と件数
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetBooks(): Promise<{ books: Book[]; count: number }> {
+  return apiRequest('/books');
+}
+
+/**
+ * 書籍を新規登録する（ファイルアップロード）
+ *
+ * @param formData - 書籍データ（bookFile, title, description, coverImage, metadata）
+ * @param onProgress - アップロード進捗コールバック（0-100の数値）
+ * @returns 作成した書籍オブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiCreateBook(formData: FormData): Promise<{ book: Book }> {
+  return apiUploadRequest<{ book: Book }>('/books', formData, 'POST');
+}
+
+/**
+ * 書籍詳細を取得する
+ *
+ * @param bookId - 書籍ID
+ * @returns 書籍オブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetBook(bookId: string): Promise<{ book: Book }> {
+  return apiRequest(`/books/${bookId}`);
+}
+
+/**
+ * 書籍情報を更新する
+ *
+ * @param bookId - 書籍ID
+ * @param formData - 更新データ（bookFile, title, description, coverImage）
+ * @returns 更新後の書籍オブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiUpdateBook(bookId: string, formData: FormData): Promise<{ book: Book }> {
+  return apiUploadRequest<{ book: Book }>(`/books/${bookId}`, formData, 'PUT');
+}
+
+/**
+ * 書籍を削除する
+ *
+ * @param bookId - 書籍ID
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiDeleteBook(bookId: string): Promise<void> {
+  return apiRequest(`/books/${bookId}`, { method: 'DELETE' });
+}
