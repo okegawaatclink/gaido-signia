@@ -1,0 +1,12 @@
+{
+  "name": "signia-e2e-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
