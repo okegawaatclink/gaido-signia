@@ -53,6 +53,16 @@ RUN if [ -f /etc/ssl/certs/custom/netskope.cer ]; then \
 # ===== ソースコードのコピー =====
 COPY output_system/frontend/ ./
 
+# ===== ビルド時環境変数 =====
+# NEXT_PUBLIC_* 変数はビルド時にバンドルに埋め込まれる（ランタイム変数ではない）
+# docker-compose.yml の args で NEXT_PUBLIC_API_URL=/api を渡すこと
+#
+# 設計方針:
+# - NEXT_PUBLIC_API_URL=/api: ブラウザからは相対パス(/api)でNext.jsプロキシ経由アクセス
+# - BACKEND_URL はnext.config.jsのrewritesで使用（サーバーサイドのみ）
+ARG NEXT_PUBLIC_API_URL=/api
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # ===== Next.jsアプリのビルド =====
 # 本番ビルドを作成（最適化されたバンドルを生成）
 RUN if [ -f /etc/ssl/certs/custom/netskope.cer ]; then \
