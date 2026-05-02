@@ -18,6 +18,7 @@ import path from 'path';
 import { BookModel, Book, CreateBookParams, UpdateBookParams } from '../models/book.model';
 import { storageService } from './storage.service';
 import { AppError, ForbiddenError, NotFoundError, ValidationError } from '../utils/errors';
+import { db } from '../config/database';
 import { logger } from '../utils/logger';
 
 /**
@@ -388,6 +389,34 @@ export class BooksService {
     // DBから書籍を削除
     await BookModel.delete(bookId);
     logger.info('Book deleted', { bookId, authorId: userId });
+  }
+
+  /**
+   * 書籍にアクセス権を持つファン一覧を取得する
+   *
+   * book_access テーブルと users テーブルを結合して、
+   * 対象書籍に対してアクセス権が付与されているファンの情報を返す。
+   * サイン合成画面のファン選択に使用する。
+   *
+   * @param bookId - 書籍ID
+   * @returns ファン情報の配列（id, name, email）
+   */
+  async getBookFans(bookId: string): Promise<{ id: string; name: string; email: string }[]> {
+    const result = await db.query(
+      `SELECT u.id, u.name, u.email
+       FROM book_access ba
+       JOIN users u ON ba.fan_id = u.id
+       WHERE ba.book_id = $1
+         AND u.role = 'fan'
+         AND u.is_active = true
+       ORDER BY u.name ASC`,
+      [bookId]
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+    }));
   }
 }
 
