@@ -139,6 +139,13 @@ docker compose up -d
 - **Jest ClassのinstanceofがESModuleモックで失敗**: `jest.mock()`でクラスをモックするとprototypeチェーンが切れて`rejects.toThrow(SomeError)`がコンストラクタ比較で失敗する。`rejects.toThrow('エラーメッセージ文字列')`による文字列マッチに変更する
 - **validationResult のTypeScript型キャスト**: express-validatorの`validationResult`はジェネリック型`ResultFactory<E>`を返すため`as jest.Mock`への直接キャストがコンパイルエラーになる。`as unknown as jest.Mock`の二段階キャストで回避
 
+- **API Key認証パターン**: `authenticateApiKey` ミドルウェアで `X-API-Key` ヘッダーをSHA-256ハッシュ化してDBと照合。`req.apiKey` にキー情報をセット。JWTの `req.user` と同様のパターン
+- **externalApiRateLimitの適用順序**: `authenticateApiKey` の後に `externalApiRateLimit` を適用することで `req.apiKey.id` をレート制限キーに使用できる。逆順ではIPベースになる
+- **仮ユーザー登録パターン**: 外部APIでfanEmailが未登録の場合 `findOrCreateFanByEmail()` で fan ロールの仮アカウントを作成。password_hash・oauth情報は設定しない（OAuthログイン時に紐付け）
+- **Base64画像バリデーション**: PNGマジックナンバー（`\x89PNG`）を最初の4バイトで確認。`data:image/png;base64,` プレフィックスは `replace(/^data:image\/\w+;base64,/, '')` で除去してからデコード
+- **adminルーターへのAPIキー管理追加**: `POST/GET/DELETE /api/admin/api-keys` を既存の著者管理ルーターと同じ `admin.routes.ts` に追加。admin JWT認証 + adminOnly RBAC を適用
+- **Jest 30での `expect.any(CustomError)` 失敗**: AppErrorを継承したカスタムエラーは `expect.any(CustomErrorClass)` で instanceof チェックが失敗する（Jest 30のモジュール境界の問題）。`error.statusCode === 404` のようなプロパティ検証で代替すること
+
 - **著者管理: ConflictError (409) 追加**: メールアドレス重複時に409を返すため `utils/errors.ts` に `ConflictError` を追加。`AppError` の既存パターンに従うこと
 - **著者無効化は論理削除**: `DELETE /api/admin/authors/:id` は is_active=false に変更するのみ（物理削除なし）。無効化された著者は `auth.service.ts` の is_active チェックでログイン拒否される
 - **pdfjs-dist v5 RenderParameters**: v5ではRenderParametersに `canvas` フィールドが必須。`canvasContext` だけでは型エラーになる。`{ canvas, canvasContext: ctx, viewport }` で渡す
@@ -177,3 +184,5 @@ docker compose up -d
 - PBI #14: ファンが本棚でサイン入り書籍一覧を確認できる (FanService・本棚API・ランディングページ・本棚画面・Header/Footer/FanBookCardコンポーネント)
 - PBI #15: ファンがDRM保護付きで電子書籍を閲覧できる (pdfjs-dist v5 PDFビューアー・epub.js EPUBビューアー・署名付きURL15分・右クリック禁止・印刷制限・ビューアー画面)
 - PBI #16: 管理者が著者アカウントを作成・管理できる (adminService・著者CRUD API・著者管理画面・Sidebar・ConflictError追加)
+- PBI #17: 外部システムがAPIで書籍アクセス権を付与・サインを登録できる (API Key認証・レート制限・外部連携API CRUD・監査ログ・仮ユーザー登録)
+- PBI #18: 管理者がダッシュボードで統計情報を確認できる (statsService・GET /api/admin/stats・GET /api/admin/books・GET /api/admin/books/:id・ダッシュボード統計カード・監査ログテーブル・書籍管理画面・書籍詳細画面)
