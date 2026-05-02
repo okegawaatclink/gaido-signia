@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    /* Next.js推奨TypeScript設定 */
+    /* ターゲット: ES2020（Node.js 20 LTSに最適） */
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    /* strict modeを有効化 */
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    /* Next.jsのbundlerモジュール解決を使用 */
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    /* 増分コンパイルを有効化（ビルド速度向上） */
+    "incremental": true,
+    /* Next.jsプラグインで型チェック強化 */
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    /* パスエイリアス設定 */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
