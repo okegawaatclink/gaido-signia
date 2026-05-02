@@ -601,3 +601,122 @@ export interface BookReadUrlResult {
 export async function apiGetBookReadUrl(bookId: string): Promise<BookReadUrlResult> {
   return apiRequest(`/fan/books/${bookId}/read`);
 }
+
+// ===== 管理者向け著者管理API =====
+
+/**
+ * 著者情報型定義（管理者向け）
+ * バックエンドの AuthorInfo 型に対応する
+ */
+export interface AuthorInfo {
+  /** ユーザー ID（UUID） */
+  id: string;
+  /** メールアドレス */
+  email: string;
+  /** 表示名 */
+  name: string;
+  /** ロール（常に 'author'） */
+  role: 'author';
+  /** アカウント有効フラグ */
+  isActive: boolean;
+  /** 作成日時（ISO 8601形式） */
+  createdAt: string;
+  /** 更新日時（ISO 8601形式） */
+  updatedAt: string;
+}
+
+/**
+ * 著者の登録書籍情報型定義
+ */
+export interface AuthorBook {
+  /** 書籍 ID */
+  id: string;
+  /** 書籍タイトル */
+  title: string;
+  /** 書籍ステータス */
+  status: 'draft' | 'published' | 'archived';
+  /** ファイル形式 */
+  format: string | null;
+  /** 作成日時（ISO 8601形式） */
+  createdAt: string;
+}
+
+/**
+ * 著者詳細型定義（登録書籍一覧含む）
+ */
+export interface AuthorDetail extends AuthorInfo {
+  /** 著者が登録した書籍の一覧 */
+  books: AuthorBook[];
+}
+
+/**
+ * 著者一覧を取得する（admin ロール専用）
+ *
+ * @returns 著者の配列と件数
+ * @throws {ApiError} 認証・認可エラー時
+ */
+export async function apiGetAuthors(): Promise<{ authors: AuthorInfo[]; count: number }> {
+  return apiRequest('/admin/authors');
+}
+
+/**
+ * 著者アカウントを作成する（admin ロール専用）
+ *
+ * @param email - メールアドレス
+ * @param name - 表示名
+ * @param password - 初期パスワード
+ * @returns 作成した著者情報
+ * @throws {ApiError} バリデーションエラー・メール重複時など
+ */
+export async function apiCreateAuthor(
+  email: string,
+  name: string,
+  password: string
+): Promise<{ author: AuthorInfo }> {
+  return apiRequest('/admin/authors', {
+    method: 'POST',
+    body: { email, name, password },
+  });
+}
+
+/**
+ * 著者詳細を取得する（admin ロール専用）
+ *
+ * @param authorId - 著者 ID（UUID）
+ * @returns 著者詳細情報（登録書籍一覧含む）
+ * @throws {ApiError} 著者が見つからない場合など
+ */
+export async function apiGetAuthor(authorId: string): Promise<{ author: AuthorDetail }> {
+  return apiRequest(`/admin/authors/${authorId}`);
+}
+
+/**
+ * 著者情報を更新する（admin ロール専用）
+ *
+ * @param authorId - 著者 ID（UUID）
+ * @param data - 更新データ（name, email, isActive）
+ * @returns 更新後の著者情報
+ * @throws {ApiError} バリデーションエラー・メール重複時など
+ */
+export async function apiUpdateAuthor(
+  authorId: string,
+  data: { name?: string; email?: string; isActive?: boolean }
+): Promise<{ author: AuthorInfo }> {
+  return apiRequest(`/admin/authors/${authorId}`, {
+    method: 'PUT',
+    body: data,
+  });
+}
+
+/**
+ * 著者アカウントを無効化する（admin ロール専用、論理削除）
+ *
+ * @param authorId - 著者 ID（UUID）
+ * @returns 無効化後の著者情報
+ * @throws {ApiError} 著者が見つからない場合など
+ */
+export async function apiDeactivateAuthor(authorId: string): Promise<{ author: AuthorInfo; message: string }> {
+  return apiRequest(`/admin/authors/${authorId}`, {
+    method: 'DELETE',
+  });
+}
