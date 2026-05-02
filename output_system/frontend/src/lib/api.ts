@@ -328,11 +328,32 @@ export async function apiGetBook(bookId: string): Promise<{ book: Book }> {
  * 書籍情報を更新する
  *
  * @param bookId - 書籍ID
- * @param formData - 更新データ（bookFile, title, description, coverImage）
+ * @param formData - 更新データ（bookFile, title, description, coverImage, status）
  * @returns 更新後の書籍オブジェクト
  * @throws {ApiError} APIエラーが発生した場合
  */
 export async function apiUpdateBook(bookId: string, formData: FormData): Promise<{ book: Book }> {
+  return apiUploadRequest<{ book: Book }>(`/books/${bookId}`, formData, 'PUT');
+}
+
+/**
+ * 書籍のステータスをJSONで更新する（ファイルアップロード不要の場合）
+ * タイトル・説明・ステータスのみを更新する際に使用する
+ *
+ * @param bookId - 書籍ID
+ * @param data - 更新データ（title, description, status）
+ * @returns 更新後の書籍オブジェクト
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiUpdateBookMetadata(
+  bookId: string,
+  data: { title?: string; description?: string; status?: Book['status'] }
+): Promise<{ book: Book }> {
+  // multipart/form-dataで送信（バックエンドがmulterでパースするため）
+  const formData = new FormData();
+  if (data.title !== undefined) formData.append('title', data.title);
+  if (data.description !== undefined) formData.append('description', data.description);
+  if (data.status !== undefined) formData.append('status', data.status);
   return apiUploadRequest<{ book: Book }>(`/books/${bookId}`, formData, 'PUT');
 }
 

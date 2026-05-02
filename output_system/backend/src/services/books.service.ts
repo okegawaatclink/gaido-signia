@@ -44,6 +44,8 @@ export interface UpdateBookInput {
   title?: string;
   /** 書籍説明 */
   description?: string;
+  /** ステータス変更: draft/published/archived */
+  status?: 'draft' | 'published' | 'archived';
   /** 新しい電子書籍ファイル（multer Buffer、オプション） */
   bookFile?: Express.Multer.File;
   /** 新しい表紙画像ファイル（multer Buffer、オプション） */
@@ -265,6 +267,8 @@ export class BooksService {
 
     if (input.title !== undefined) updateParams.title = input.title;
     if (input.description !== undefined) updateParams.description = input.description;
+    // ステータス変更を許可（draft/published/archived）
+    if (input.status !== undefined) updateParams.status = input.status;
     if (input.metadata !== undefined) updateParams.metadata = input.metadata;
 
     // 新しいファイルが指定されている場合はS3にアップロード

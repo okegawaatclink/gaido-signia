@@ -208,6 +208,8 @@ export async function updateBook(req: Request, res: Response, next: NextFunction
     const book = await booksService.updateBook(id, userId, role, {
       title: req.body.title as string | undefined,
       description: req.body.description as string | undefined,
+      // ステータス変更: draft/published/archived
+      status: req.body.status as 'draft' | 'published' | 'archived' | undefined,
       bookFile,
       coverImageFile,
       metadata,
