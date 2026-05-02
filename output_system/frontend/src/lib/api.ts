@@ -534,3 +534,70 @@ export async function apiCompose(
 export async function apiGetSignedBook(signedBookId: string): Promise<{ signedBook: SignedBook }> {
   return apiRequest(`/compose/${signedBookId}`);
 }
+
+// ===== ファン向け本棚API =====
+
+/**
+ * 本棚アイテム型定義
+ * バックエンドの BookshelfItem 型に対応する
+ */
+export interface BookshelfItem {
+  /** 書籍基本情報 */
+  book: {
+    id: string;
+    title: string;
+    description: string | null;
+    format: 'pdf' | 'epub';
+    /** 表紙画像の署名付きURL（15分有効）。未設定の場合はnull */
+    coverImageUrl: string | null;
+    fileSize: number | null;
+    pageCount: number | null;
+    status: 'draft' | 'published' | 'archived';
+    createdAt: string;
+  };
+  /** サイン入り書籍情報（サイン合成済みの場合のみ。未合成の場合はnull） */
+  signedBook: {
+    id: string;
+    signType: string | null;
+    recipientName: string | null;
+    status: 'processing' | 'completed' | 'error';
+    composedAt: string | null;
+  } | null;
+  /** アクセス権情報 */
+  access: {
+    id: string;
+    grantedBy: 'api' | 'manual';
+    grantedAt: string;
+  };
+}
+
+/**
+ * ファンの本棚（サイン入り書籍一覧）を取得する
+ *
+ * @returns 本棚アイテムの配列と件数
+ * @throws {ApiError} APIエラーが発生した場合
+ */
+export async function apiGetBookshelf(): Promise<{ items: BookshelfItem[]; count: number }> {
+  return apiRequest('/fan/bookshelf');
+}
+
+/**
+ * 書籍閲覧URL取得結果型定義
+ */
+export interface BookReadUrlResult {
+  /** 署名付きURL（15分有効） */
+  url: string;
+  /** URLの有効期限（ISO 8601形式） */
+  expiresAt: string;
+}
+
+/**
+ * 書籍閲覧用の署名付きURLを取得する
+ *
+ * @param bookId - 書籍ID
+ * @returns 署名付きURLと有効期限
+ * @throws {ApiError} アクセス権がない場合など
+ */
+export async function apiGetBookReadUrl(bookId: string): Promise<BookReadUrlResult> {
+  return apiRequest(`/fan/books/${bookId}/read`);
+}

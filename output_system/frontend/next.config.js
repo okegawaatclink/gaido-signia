@@ -5,6 +5,37 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
+  /**
+   * 外部画像の許可設定
+   *
+   * MinIOの署名付きURLからの画像（表紙サムネイル等）をNext.js Imageコンポーネントで
+   * 最適化表示するために設定。
+   *
+   * 開発環境（localhost:9000）と本番環境の両方を許可する。
+   * FanBookCard.tsxでは unoptimized プロパティを使用して署名付きURLをそのまま表示する。
+   */
+  images: {
+    remotePatterns: [
+      {
+        // MinIO開発環境（localhost経由）
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+        pathname: '/**',
+      },
+      {
+        // MinIOコンテナ内アクセス（Docker Composeネットワーク）
+        protocol: 'http',
+        hostname: 'minio',
+        port: '9000',
+        pathname: '/**',
+      },
+    ],
+    // 外部ドメインからの画像は unoptimized で直接取得する
+    // （署名付きURLは外部URLのため、Next.jsの画像最適化APIを通すとURLが変わる）
+    dangerouslyAllowSVG: false,
+  },
+
   // ESLint設定: ビルド時にLintエラーを検出
   eslint: {
     ignoreDuringBuilds: false,
