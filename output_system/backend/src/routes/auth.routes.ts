@@ -15,6 +15,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { login, logout, getMe } from '../controllers/auth.controller';
+import { oauthLogin } from '../controllers/oauth.controller';
 import { authenticate } from '../middleware/auth.middleware';
 
 /** 認証ルーター */
@@ -104,5 +105,77 @@ router.post('/logout', authenticate, logout);
  * }
  */
 router.get('/me', authenticate, getMe);
+
+/**
+ * OAuthログインのレート制限設定
+ * NextAuth.jsからのコールバック呼び出しに適用
+ * 15分間で最大50回のリクエストを許可（複数ユーザーが同時にログインするケースを考慮）
+ */
+const oauthRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分
+  max: 50, // 最大50回
+  message: {
+    error: 'TOO_MANY_REQUESTS',
+    message: 'リクエスト数が多すぎます。15分後に再試行してください。',
+    statusCode: 429,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * OAuthリクエストのバリデーションルール
+ * NextAuth.jsが送信するプロバイダー情報を検証する
+ */
+const oauthValidators = [
+  body('provider')
+    .isIn(['google', 'apple'])
+    .withMessage('有効なOAuthプロバイダーを指定してください'),
+  body('providerId')
+    .notEmpty()
+    .withMessage('プロバイダーIDは必須です')
+    .isString()
+    .trim(),
+  body('email')
+    .isEmail()
+    .withMessage('有効なメールアドレスを入力してください')
+    .normalizeEmail(),
+  body('name')
+    .notEmpty()
+    .withMessage('名前は必須です')
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('名前は100文字以内で入力してください'),
+  body('avatarUrl')
+    .optional({ nullable: true })
+    .isURL()
+    .withMessage('有効なURLを入力してください'),
+];
+
+/**
+ * POST /api/auth/oauth
+ * OAuthプロバイダー経由でファンアカウントを作成または取得する
+ *
+ * NextAuth.jsのsignInコールバックから呼び出される。
+ * 初回ログイン時にfanロールでアカウントを自動作成する。
+ *
+ * リクエストボディ:
+ * {
+ *   "provider": "google" | "apple",
+ *   "providerId": "プロバイダー固有のユーザーID",
+ *   "email": "user@example.com",
+ *   "name": "ユーザー表示名",
+ *   "avatarUrl": "https://..." | null
+ * }
+ *
+ * レスポンス (200):
+ * {
+ *   "token": "eyJhbGc...",
+ *   "user": { "id": "...", "email": "...", "name": "...", "role": "fan", ... },
+ *   "isNewUser": true/false
+ * }
+ */
+router.post('/oauth', oauthRateLimit, oauthValidators, oauthLogin);
 
 export default router;

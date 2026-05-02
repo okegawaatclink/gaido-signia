@@ -36,6 +36,26 @@ services:
       # BACKEND_URL: Next.jsサーバー側からバックエンドにアクセスする際のURL
       # next.config.jsのrewritesで使用する（コンテナ名でアクセス可能）
       - BACKEND_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
+      # BACKEND_API_URL: NextAuth.jsのsignInコールバックからバックエンドにアクセスする際のURL
+      # コンテナ内のサーバーサイド処理なのでコンテナ名でアクセスする
+      - BACKEND_API_URL=http://okegawaatclink-gaido-signia-output-system-backend:3002
+      # NEXTAUTH_URL: NextAuth.jsがOAuthコールバックURLを生成する際のベースURL
+      # 本番環境では実際のドメインに変更すること
+      - NEXTAUTH_URL=http://localhost:3001
+      # AUTH_SECRET: NextAuth.jsのJWT署名・暗号化に使用するシークレットキー
+      # 本番環境では強力なランダム文字列（最低32文字）に変更すること
+      # 生成コマンド: openssl rand -base64 32
+      - AUTH_SECRET=dev-nextauth-secret-change-in-production
+      # Google OAuth設定（OAuth認証を使用する場合は実際の値を設定すること）
+      # Google Cloud Consoleで取得: https://console.developers.google.com/
+      # コールバックURL: http://localhost:3001/api/auth/callback/google
+      - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID:-your-google-client-id}
+      - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET:-your-google-client-secret}
+      # Apple Sign In設定（OAuth認証を使用する場合は実際の値を設定すること）
+      # Apple Developerで取得: https://developer.apple.com/
+      # コールバックURL: http://localhost:3001/api/auth/callback/apple
+      - AUTH_APPLE_ID=${AUTH_APPLE_ID:-your-apple-service-id}
+      - AUTH_APPLE_SECRET=${AUTH_APPLE_SECRET:-your-apple-private-key}
       # ViteのホストアクセスをコンテナDockerホスト名で許可（Next.jsには不要だが設定を統一）
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=okegawaatclink-gaido-signia-output-system
     depends_on:
