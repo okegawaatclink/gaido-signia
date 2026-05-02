@@ -215,6 +215,11 @@ router.put(
     body('description')
       .optional()
       .isString().withMessage('説明は文字列で入力してください'),
+    // ステータス変更: draft/published/archived のみ許可
+    body('status')
+      .optional()
+      .isIn(['draft', 'published', 'archived'])
+      .withMessage('ステータスは draft, published, archived のいずれかを指定してください'),
   ],
   updateBook
 );
