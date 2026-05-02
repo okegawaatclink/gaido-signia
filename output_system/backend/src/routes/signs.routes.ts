@@ -27,6 +27,7 @@ import {
   getSigns,
   createSign,
   getSign,
+  getSignImage,
   updateSign,
   deleteSign,
 } from '../controllers/signs.controller';
@@ -179,6 +180,22 @@ router.get(
     param('id').isUUID().withMessage('サインIDが不正です'),
   ],
   getSign
+);
+
+/**
+ * GET /api/signs/:id/image
+ * サイン画像の署名付きS3 URLへリダイレクト
+ * フロントエンドの<img>タグで直接使用可能
+ * ※ /:id より前に定義しないと /image が :id に捕捉される
+ */
+router.get(
+  '/:id/image',
+  authenticate,
+  requireRole('author'),
+  [
+    param('id').isUUID().withMessage('サインIDが不正です'),
+  ],
+  getSignImage
 );
 
 /**

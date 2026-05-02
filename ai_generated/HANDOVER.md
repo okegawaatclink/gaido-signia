@@ -34,7 +34,9 @@ output_system/
 │           │   ├── page.tsx        # 書籍一覧（削除機能付き）
 │           │   └── new/page.tsx    # 書籍登録（ドラッグ&ドロップ・進捗バー付き）
 │           └── author/signs/  # 著者サイン管理
-│               └── new/page.tsx    # サイン作成（Canvas手書き・プレビュー・フォーム）
+│               ├── page.tsx        # サイン一覧（デフォルトバッジ・削除機能付き）
+│               ├── new/page.tsx    # サイン作成（Canvas手書き・プレビュー・フォーム）
+│               └── [signId]/page.tsx # サイン詳細・編集（再作成モード・削除確認）
 └── backend/
     ├── package.json            # Express + pg + node-pg-migrate + jest/ts-jest
     ├── .npmrc                  # min-release-age=7
@@ -99,6 +101,8 @@ docker compose up -d
 - **SignCanvasのforwardRef**: 親コンポーネントから `getCanvasJSON()`, `getCanvasPNGBlob()`, `isEmpty()` を呼び出すため `forwardRef` + `useImperativeHandle` を使用
 - **is_default排他制御**: 同一著者で複数のデフォルトサインが生まれないようPostgreSQLトランザクション内でCASEを使って他のサインのis_defaultをfalseに更新してからINSERT/UPDATEを実行
 - **multer PNG専用フィルター**: サイン画像は透過PNGである必要があるためfileFilterでimage/png + .png拡張子のみ許可（BooksのPDF/EPUBとは別のmulterインスタンス）
+- **サイン画像の表示方法**: `<img src="/api/signs/:id/image" />` はBearerトークンを送れないため401になる。JWTが必要なAPIエンドポイントの画像は `fetch(url, { headers: { Authorization: Bearer... } })` でBlobを取得し `URL.createObjectURL(blob)` でObjectURLを生成してimg.srcに渡す。アンマウント時に `URL.revokeObjectURL()` でメモリ解放必須
+- **GET /:id/image エンドポイント**: S3署名付きURLへ302リダイレクト。`/:id` より前に定義しないとExpress の `:id` パラメータに `/image` が吸収される。signsルーターでは `/:id/image` を `/:id` の前に定義済み
 - **isDefaultのmultipart文字列パース**: multipart/form-dataで送信される `isDefault` は `'true'/'false'` 文字列。コントローラーで `req.body.isDefault === 'true'` として明示的にbooleanに変換すること
 - **タブレットでのスクロール抑止**: iPad Safariで描画中にページスクロールが発生する問題はCanvasラッパーdivに `{ passive: false }` でtouchmoveイベントリスナーを追加し `e.preventDefault()` することで解決
 - **SignCanvas型安全性**: `@typescript-eslint/no-explicit-any` を使わずFabric.jsの動的importを型安全にするため `FabricCanvasInstance` / `FabricObject` インターフェースを定義し `as unknown as FabricCanvasInstance` でキャスト
@@ -122,3 +126,4 @@ docker compose up -d
 - PBI #9: 著者による電子書籍アップロード・登録 (multer + MinIO S3・RBAC・AES-256 SSEオプション・ドラッグ&ドロップUI)
 - PBI #10: 著者が登録済み書籍を一覧・編集・削除できる (BookCard/BookListコンポーネント・書籍詳細編集画面・ステータス変更・確認ダイアログ付き削除)
 - PBI #11: 著者がタブレットで手書きサインを作成・登録できる (Fabric.js v6 Canvas・SignCanvas/SignPreviewコンポーネント・サインCRUD API・PNG専用multer・is_default排他制御)
+- PBI #12: 著者が作成済みサインを一覧・編集・削除できる (SignCardコンポーネント・サイン一覧/詳細・編集画面・JWT認証付き画像fetch・再作成モード・削除確認ダイアログ)

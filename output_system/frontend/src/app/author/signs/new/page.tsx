@@ -179,9 +179,7 @@ export default function NewSignPage() {
       await apiCreateSign(formData);
 
       // 保存成功後にサイン一覧画面にリダイレクト
-      // TODO: サイン一覧画面（/author/signs）はPBI 3.2で実装予定
-      // 現時点では書籍一覧にリダイレクト
-      router.push('/author/books');
+      router.push('/author/signs');
     } catch (error) {
       const apiError = error as ApiError;
       setSubmitError(apiError.message || 'サインの保存に失敗しました');
@@ -211,7 +209,7 @@ export default function NewSignPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
-            onClick={() => router.push('/author/books')}
+            onClick={() => router.push('/author/signs')}
             style={{
               background: 'none',
               border: 'none',
@@ -222,7 +220,7 @@ export default function NewSignPage() {
               display: 'flex',
               alignItems: 'center',
             }}
-            aria-label="書籍一覧に戻る"
+            aria-label="サイン一覧に戻る"
           >
             ←
           </button>
@@ -452,7 +450,7 @@ export default function NewSignPage() {
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <button
               type="button"
-              onClick={() => router.push('/author/books')}
+              onClick={() => router.push('/author/signs')}
               disabled={isSubmitting}
               style={{
                 padding: '0.625rem 1.5rem',

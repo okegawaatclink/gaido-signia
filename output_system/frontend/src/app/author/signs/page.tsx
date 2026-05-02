@@ -1,43 +1,48 @@
 /**
- * @file author/books/page.tsx
- * @description 著者向け書籍一覧画面（A2）
+ * @file author/signs/page.tsx
+ * @description 著者向けサイン一覧画面（A5）
  *
- * 著者が登録した書籍の一覧をカード形式で表示する画面。
- * 書籍の登録・詳細閲覧・削除操作へのエントリポイント。
+ * 著者が作成したサインの一覧をカード形式で表示する画面。
+ * サインのプレビュー画像・名前・種別・デフォルト設定を表示する。
  *
  * 機能:
- * - 書籍一覧のカードグリッド表示（表紙サムネイル・タイトル・ステータス）
- * - 新規書籍登録ページへのリンク
- * - 書籍詳細・編集ページへのナビゲーション
- * - 書籍削除（確認ダイアログ付き）
+ * - サイン一覧のカードグリッド表示（プレビュー画像・名前・種別・デフォルト表示）
+ * - 新規サイン作成ページへのリンク
+ * - サイン詳細・編集ページへのナビゲーション
+ * - サイン削除（確認ダイアログ付き）
+ * - 書籍一覧へのナビゲーション
  * - ログアウト
+ *
+ * セキュリティ:
+ * - 著者ロール以外はログイン画面にリダイレクト
+ * - 自分のサインのみ表示（APIがJWT認証で制御）
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, apiGetMe, apiLogout, apiGetBooks, apiDeleteBook, AuthUser, Book, ApiError } from '../../../lib/api';
-import { BookList } from '../../../components/book/BookList';
+import { getToken, apiGetMe, apiLogout, apiGetSigns, apiDeleteSign, AuthUser, Sign, ApiError } from '../../../lib/api';
+import SignCard from '../../../components/sign/SignCard';
 
 /**
- * 著者向け書籍一覧コンポーネント（A2: 書籍一覧）
+ * 著者向けサイン一覧コンポーネント（A5: サイン一覧）
  *
  * ログイン状態を確認して著者ロール以外のアクセスをリダイレクトする。
- * BookList コンポーネントを使用してカードグリッドで書籍を表示する。
+ * SignCardコンポーネントを使用してカードグリッドでサインを表示する。
  *
- * @returns {JSX.Element} 書籍一覧画面
+ * @returns {JSX.Element} サイン一覧画面
  */
-export default function AuthorBooks() {
+export default function AuthorSigns() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [books, setBooks] = useState<Book[]>([]);
+  const [signs, setSigns] = useState<Sign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // 削除処理中の書籍ID（nullは処理なし）
+  // 削除処理中のサインID（nullは処理なし）
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // マウント時に認証状態と書籍一覧を取得する
+  // マウント時に認証状態とサイン一覧を取得する
   useEffect(() => {
     async function loadData() {
       const token = getToken();
@@ -48,9 +53,9 @@ export default function AuthorBooks() {
       }
 
       try {
-        const [meResult, booksResult] = await Promise.all([
+        const [meResult, signsResult] = await Promise.all([
           apiGetMe(),
-          apiGetBooks(),
+          apiGetSigns(),
         ]);
 
         // authorロール以外はアクセス不可（RBAC）
@@ -60,7 +65,7 @@ export default function AuthorBooks() {
         }
 
         setUser(meResult.user);
-        setBooks(booksResult.books);
+        setSigns(signsResult.signs);
       } catch (err) {
         const apiError = err as ApiError;
         if (apiError.statusCode === 401) {
@@ -87,23 +92,23 @@ export default function AuthorBooks() {
   }
 
   /**
-   * 書籍削除処理
+   * サイン削除処理
    * 確認ダイアログを表示してから削除を実行する
    * 削除後は一覧からリアクティブに除去する
    *
-   * @param book - 削除する書籍オブジェクト
+   * @param sign - 削除するサインオブジェクト
    */
-  async function handleDeleteBook(book: Book) {
+  async function handleDeleteSign(sign: Sign) {
     // 復元不可のため確認ダイアログを必ず表示する
-    if (!window.confirm(`「${book.title}」を削除しますか？\n\nこの操作は取り消せません。\nS3に保存されたファイルも同時に削除されます。`)) {
+    if (!window.confirm(`「${sign.name}」を削除しますか？\n\nこの操作は取り消せません。\nS3に保存されたサイン画像も同時に削除されます。`)) {
       return;
     }
 
-    setDeletingId(book.id);
+    setDeletingId(sign.id);
     try {
-      await apiDeleteBook(book.id);
+      await apiDeleteSign(sign.id);
       // 削除成功後、一覧からリアクティブに除去
-      setBooks((prev) => prev.filter((b) => b.id !== book.id));
+      setSigns((prev) => prev.filter((s) => s.id !== sign.id));
     } catch (err) {
       const apiError = err as ApiError;
       alert(`削除に失敗しました: ${apiError.message}`);
@@ -113,12 +118,12 @@ export default function AuthorBooks() {
   }
 
   /**
-   * 書籍詳細・編集画面へ遷移する
+   * サイン詳細・編集画面へ遷移する
    *
-   * @param bookId - 遷移先の書籍ID
+   * @param signId - 遷移先のサインID
    */
-  function handleViewDetail(bookId: string) {
-    router.push(`/author/books/${bookId}`);
+  function handleViewDetail(signId: string) {
+    router.push(`/author/signs/${signId}`);
   }
 
   if (isLoading) {
@@ -143,9 +148,23 @@ export default function AuthorBooks() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>書籍管理</h1>
-          {/* サイン管理へのナビゲーションリンク */}
+          <h1 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>サイン管理</h1>
+          {/* 書籍一覧へのナビゲーションリンク */}
           <nav style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={() => router.push('/author/books')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#6b7280',
+                fontSize: '0.875rem',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+              }}
+            >
+              書籍一覧
+            </button>
             <button
               style={{
                 background: 'none',
@@ -157,20 +176,6 @@ export default function AuthorBooks() {
                 padding: '0.25rem 0.5rem',
                 borderRadius: '4px',
                 borderBottom: '2px solid #2563eb',
-              }}
-            >
-              書籍一覧
-            </button>
-            <button
-              onClick={() => router.push('/author/signs')}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#6b7280',
-                fontSize: '0.875rem',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '4px',
               }}
             >
               サイン一覧
@@ -210,10 +215,10 @@ export default function AuthorBooks() {
           }}
         >
           <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            {books.length}件の書籍
+            {signs.length}件のサイン
           </p>
           <button
-            onClick={() => router.push('/author/books/new')}
+            onClick={() => router.push('/author/signs/new')}
             style={{
               padding: '0.625rem 1.25rem',
               backgroundColor: '#2563eb',
@@ -228,7 +233,7 @@ export default function AuthorBooks() {
               gap: '0.5rem',
             }}
           >
-            + 書籍を登録する
+            + サインを作成する
           </button>
         </div>
 
@@ -249,14 +254,61 @@ export default function AuthorBooks() {
           </div>
         )}
 
-        {/* 書籍リスト（BookListコンポーネント） */}
-        <BookList
-          books={books}
-          onViewDetail={handleViewDetail}
-          onDelete={handleDeleteBook}
-          deletingId={deletingId}
-          onCreateNew={() => router.push('/author/books/new')}
-        />
+        {/* サイン一覧またはエンプティステート */}
+        {signs.length === 0 ? (
+          /* サインがない場合のエンプティステート */
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '4rem 2rem',
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              border: '2px dashed #e5e7eb',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✍️</div>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>
+              まだサインがありません
+            </h2>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+              タブレット手書きでサインを作成しましょう
+            </p>
+            <button
+              onClick={() => router.push('/author/signs/new')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#2563eb',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+              }}
+            >
+              最初のサインを作成する
+            </button>
+          </div>
+        ) : (
+          /* サインカードのグリッド */
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '1.25rem',
+            }}
+          >
+            {signs.map((sign) => (
+              <SignCard
+                key={sign.id}
+                sign={sign}
+                onViewDetail={handleViewDetail}
+                onDelete={handleDeleteSign}
+                isDeleting={deletingId === sign.id}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
